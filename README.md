@@ -17,4 +17,4 @@ node --test tests/site.test.mjs
 python3 -m unittest tests/test_server.py
 ```
 
-使用 `server.py` 而不是 Python 默认静态服务器，可确保 Markdown 响应明确声明 UTF-8 编码。
+使用 `server.py` 而不是 Python 默认静态服务器，会将 Markdown 作为明确声明 UTF-8 的纯文本返回，避免部分浏览器错误猜测中文编码。
