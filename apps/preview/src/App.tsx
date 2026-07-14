@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import { WhiteNoiseEngine } from './audio/whiteNoise';
 import { createTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
 
 type SceneId = 'rain' | 'forest' | 'coast' | 'cafe';
@@ -31,6 +32,8 @@ export function App() {
   const [answer, setAnswer] = useState('');
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(62);
+  const [audioReady, setAudioReady] = useState(false);
+  const audioEngine = useRef<WhiteNoiseEngine | null>(null);
   const scene = scenes.find(item => item.id === sceneId)!;
   const running = timer.phase === 'focus';
   const minutes = Math.floor(timer.remainingMs / 60_000);
@@ -41,6 +44,17 @@ export function App() {
     const id = window.setInterval(() => setTimer(current => tickTimer(current, Date.now())), 250);
     return () => window.clearInterval(id);
   }, [running]);
+
+  useEffect(() => {
+    audioEngine.current?.update(sceneId, volume, muted);
+  }, [sceneId, volume, muted]);
+
+  useEffect(() => () => audioEngine.current?.stop(), []);
+
+  const enableAudio = () => {
+    if (!audioEngine.current) audioEngine.current = new WhiteNoiseEngine();
+    void audioEngine.current.start(sceneId, volume, muted).then(() => setAudioReady(true));
+  };
 
   const toggleTimer = () => setTimer(current => {
     if (current.phase === 'idle' || current.phase === 'completed') return startTimer(createTimer(current.durationMs), Date.now());
@@ -88,7 +102,7 @@ export function App() {
     </section>
 
     <section className="control-dock">
-      <div className="ambience"><div className="control-icon">♫</div><div><small>正在播放</small><strong>{scene.noise}</strong></div><button onClick={() => setMuted(v => !v)} aria-label={muted ? '取消静音' : '静音'}>{muted ? '×' : '◖'}</button><input aria-label="白噪音音量" type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))}/><output>{volume}%</output></div>
+      <div className="ambience"><div className="control-icon">♫</div><div><small>{audioReady ? muted ? '已静音' : '正在播放' : '点击播放'}</small><strong>{scene.noise}</strong></div><button onClick={() => { if (!audioReady) enableAudio(); else setMuted(v => !v); }} aria-label={!audioReady ? '播放白噪音' : muted ? '取消静音' : '静音'}>{!audioReady ? '▶' : muted ? '×' : '◖'}</button><input aria-label="白噪音音量" type="range" min="0" max="100" value={volume} onPointerDown={enableAudio} onChange={e => setVolume(Number(e.target.value))}/><output>{volume}%</output></div>
       <div className="divider"/>
       <div className="supervision"><div className={`camera-dot ${supervising ? 'on' : ''}`}>◉</div><div><small>模拟监督</small><strong>{supervising ? '模拟监督已开启' : '未调用摄像头或在线模型'}</strong></div><button onClick={() => setSupervising(v => !v)}>{supervising ? '关闭模拟监督' : '开启模拟监督'}</button></div>
       <button className="ask" onClick={() => setDrawer(true)} aria-label="问问灯灯"><span>✦</span>问问灯灯</button>
