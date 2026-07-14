@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { WhiteNoiseEngine } from './audio/whiteNoise';
+import { createAiProvider } from './ai/provider';
 import { createTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
 import { loadSessions, saveSession, summarizeToday } from './storage/sessionRepository';
 import { CameraSession } from './supervision/cameraSession';
@@ -16,6 +17,7 @@ const scenes = [
 const artworkLabels: Record<SceneId, string> = {
   rain: '雨夜城市窗景', forest: '晨雾森林窗景', coast: '黄昏海岸窗景', cafe: '咖啡馆室内窗景',
 };
+const aiProvider = createAiProvider(import.meta.env.VITE_AI_API_URL);
 
 function SceneArtwork({ scene }: { scene: SceneId }) {
   return <div className={`scene-art art-${scene}`} role="img" aria-label={artworkLabels[scene]}>
@@ -37,6 +39,7 @@ export function App() {
   const [drawer, setDrawer] = useState(false);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
+  const [asking, setAsking] = useState(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(62);
   const [audioReady, setAudioReady] = useState(false);
@@ -105,11 +108,15 @@ export function App() {
 
   const selectDuration = (minutes: number) => setTimer(createTimer(minutes * 60_000));
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!question.trim()) return;
-    setAnswer('先写下今天最小的一步，完成它以后再决定下一步。现在，先专注十分钟。');
+    const submittedQuestion = question;
     setQuestion('');
+    setAsking(true);
+    try { setAnswer(await aiProvider.ask(submittedQuestion)); }
+    catch (error) { setAnswer(error instanceof Error ? `暂时无法回答：${error.message}` : '暂时无法回答'); }
+    finally { setAsking(false); }
   };
 
   return <main className={`app scene-${scene.id}`} aria-label={`${scene.name}场景`}>
@@ -155,8 +162,8 @@ export function App() {
     {drawer && <div className="drawer-backdrop" onMouseDown={() => setDrawer(false)}><aside className="ai-drawer" onMouseDown={e => e.stopPropagation()} aria-label="AI 问答">
       <header><div><small>演示问答</small><h2>问问灯灯</h2></div><button aria-label="关闭问答" onClick={() => setDrawer(false)}>×</button></header>
       <div className="chat"><div className="bot-message">我可以帮你拆解任务、解释知识点，或者在卡住时给一点提示。</div>{answer && <div className="bot-message answer">{answer}</div>}</div>
-      <form onSubmit={submit}><input value={question} onChange={e => setQuestion(e.target.value)} placeholder="输入一个学习问题…"/><button aria-label="发送">↑</button></form>
-      <p>本地固定回复 · 未调用在线模型</p>
+      <form onSubmit={submit}><input value={question} onChange={e => setQuestion(e.target.value)} placeholder="输入一个学习问题…" disabled={asking}/><button aria-label="发送" disabled={asking}>{asking ? '…' : '↑'}</button></form>
+      <p>{aiProvider.label} · 可通过 VITE_AI_API_URL 配置</p>
     </aside></div>}
   </main>;
 }
