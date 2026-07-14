@@ -8,6 +8,19 @@ const scenes = [
   { id: 'cafe' as const, name: '安静咖啡馆', noise: '咖啡馆低语', time: '15:06', icon: '⌇' },
 ];
 
+const artworkLabels: Record<SceneId, string> = {
+  rain: '雨夜城市窗景', forest: '晨雾森林窗景', coast: '黄昏海岸窗景', cafe: '咖啡馆室内窗景',
+};
+
+function SceneArtwork({ scene }: { scene: SceneId }) {
+  return <div className={`scene-art art-${scene}`} role="img" aria-label={artworkLabels[scene]}>
+    {scene === 'rain' && <><div className="moon"/><div className="city back"/><div className="city front"/><div className="neon">夜读</div></>}
+    {scene === 'forest' && <><div className="forest-moon"/><div className="mist m1"/><div className="mist m2"/><div className="trees back"/><div className="trees front"/></>}
+    {scene === 'coast' && <><div className="sunset-sun"/><div className="island"/><div className="sea"><i/><i/><i/></div><div className="birds">⌁　⌁</div></>}
+    {scene === 'cafe' && <><div className="pendant p1"/><div className="pendant p2"/><div className="shelves"><i/><i/><i/></div><div className="counter"><span/><b/></div></>}
+  </div>;
+}
+
 export function App() {
   const [sceneId, setSceneId] = useState<SceneId>('rain');
   const [running, setRunning] = useState(false);
@@ -41,7 +54,7 @@ export function App() {
     </nav>
 
     <section className="workspace">
-      <div className="window-frame" aria-hidden="true"><div className="horizon"/><div className="rain-lines"/></div>
+      <div className="window-frame"><SceneArtwork scene={scene.id}/></div>
       <div className="desk-line" aria-hidden="true"/>
       <section className={`companion ${running ? 'is-focus' : ''} ${supervising ? 'is-watch' : ''}`} aria-label="AI 伙伴灯灯">
         <div className="speech"><small>灯灯</small><p>{supervising ? '我会安静看守这段时间。' : running ? '陪你专注中' : '准备好时，我们就开始。'}</p></div>

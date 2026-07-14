@@ -11,9 +11,15 @@ describe('study room preview', () => {
 
   it('switches between all four atmospheric scenes', async () => {
     render(<App />);
+    expect(screen.getByLabelText('雨夜城市窗景')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: '森林晨雾' }));
     expect(screen.getByRole('main', { name: '森林晨雾场景' })).toBeVisible();
     expect(screen.getByText('林间风声')).toBeVisible();
+    expect(screen.getByLabelText('晨雾森林窗景')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: '海边黄昏' }));
+    expect(screen.getByLabelText('黄昏海岸窗景')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: '安静咖啡馆' }));
+    expect(screen.getByLabelText('咖啡馆室内窗景')).toBeVisible();
   });
 
   it('starts a visual focus session and keeps demo disclosure', async () => {
