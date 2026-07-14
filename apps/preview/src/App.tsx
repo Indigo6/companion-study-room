@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { WhiteNoiseEngine } from './audio/whiteNoise';
 import { createTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
+import { loadSessions, saveSession, summarizeToday } from './storage/sessionRepository';
 import { CameraSession } from './supervision/cameraSession';
 import './camera-preview.css';
 
@@ -28,6 +29,9 @@ function SceneArtwork({ scene }: { scene: SceneId }) {
 export function App() {
   const [sceneId, setSceneId] = useState<SceneId>('rain');
   const [timer, setTimer] = useState(() => createTimer(25 * 60_000));
+  const [goal, setGoal] = useState('整理第三章笔记，并完成 10 道练习');
+  const [pauseCount, setPauseCount] = useState(0);
+  const [todaySummary, setTodaySummary] = useState(() => summarizeToday(loadSessions()));
   const [supervising, setSupervising] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [drawer, setDrawer] = useState(false);
@@ -39,6 +43,7 @@ export function App() {
   const audioEngine = useRef<WhiteNoiseEngine | null>(null);
   const cameraSession = useRef<CameraSession | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const recordedCompletion = useRef(false);
   const scene = scenes.find(item => item.id === sceneId)!;
   const running = timer.phase === 'focus';
   const minutes = Math.floor(timer.remainingMs / 60_000);
@@ -49,6 +54,17 @@ export function App() {
     const id = window.setInterval(() => setTimer(current => tickTimer(current, Date.now())), 250);
     return () => window.clearInterval(id);
   }, [running]);
+
+  useEffect(() => {
+    if (timer.phase !== 'completed' || recordedCompletion.current) return;
+    recordedCompletion.current = true;
+    saveSession(window.localStorage, {
+      id: crypto.randomUUID(), goal, plannedMinutes: timer.durationMs / 60_000,
+      actualSeconds: Math.round(timer.durationMs / 1_000), pauseCount, awayCount: 0,
+      outcome: 'completed', completedAt: new Date().toISOString(),
+    });
+    setTodaySummary(summarizeToday(loadSessions()));
+  }, [timer.phase, timer.durationMs, goal, pauseCount]);
 
   useEffect(() => {
     audioEngine.current?.update(sceneId, volume, muted);
@@ -81,8 +97,9 @@ export function App() {
   };
 
   const toggleTimer = () => setTimer(current => {
-    if (current.phase === 'idle' || current.phase === 'completed') return startTimer(createTimer(current.durationMs), Date.now());
+    if (current.phase === 'idle' || current.phase === 'completed') { recordedCompletion.current = false; setPauseCount(0); return startTimer(createTimer(current.durationMs), Date.now()); }
     if (current.phase === 'paused') return resumeTimer(current, Date.now());
+    setPauseCount(count => count + 1);
     return pauseTimer(current, Date.now());
   });
 
@@ -100,7 +117,7 @@ export function App() {
     <header className="topbar">
       <div className="brand"><i className="brand-light"/><span>伴读</span><em>STUDY WITH ME</em></div>
       <div className="demo-pill"><i/>视觉预览 · 演示模式</div>
-      <div className="today"><span>今日专注</span><strong>02<small>h</small> 15<small>m</small></strong></div>
+      <div className="today"><span>今日专注</span><strong>{String(Math.floor(todaySummary.seconds / 3600)).padStart(2, '0')}<small>h</small> {String(Math.floor(todaySummary.seconds % 3600 / 60)).padStart(2, '0')}<small>m</small></strong></div>
     </header>
 
     <nav className="scene-switcher" aria-label="选择学习场景">
@@ -121,7 +138,7 @@ export function App() {
       <section className="timer-card" aria-label="番茄钟">
         <div className="timer-meta"><span>{running ? 'FOCUSING' : timer.phase === 'paused' ? 'PAUSED' : 'READY'}</span><div><button onClick={() => selectDuration(25)}>25 / 5</button><button onClick={() => selectDuration(45)}>45 / 10</button></div></div>
         <div className="clock">{String(minutes).padStart(2, '0')}<span>:</span>{String(seconds).padStart(2, '0')}</div>
-        <div className="goal"><small>本次目标</small><input aria-label="本次目标" defaultValue="整理第三章笔记，并完成 10 道练习"/></div>
+        <div className="goal"><small>本次目标</small><input aria-label="本次目标" value={goal} onChange={event => setGoal(event.target.value)}/></div>
         <button className="start" aria-label={running ? '暂停一下' : timer.phase === 'paused' ? '继续专注' : '开始专注'} onClick={toggleTimer}>{running ? '暂停一下' : timer.phase === 'paused' ? '继续专注' : '开始专注'}<span aria-hidden="true">→</span></button>
       </section>
     </section>
@@ -133,7 +150,7 @@ export function App() {
       <button className="ask" onClick={() => setDrawer(true)} aria-label="问问灯灯"><span>✦</span>问问灯灯</button>
     </section>
 
-    <footer><span>今天已经完成 4 个番茄钟</span><i/><span>最近一次离席：无</span><i/><span>摄像头画面不上传、不保存</span></footer>
+    <footer><span>今天已经完成 {todaySummary.completed} 个番茄钟</span><i/><span>最近一次离席：无</span><i/><span>摄像头画面不上传、不保存</span></footer>
 
     {drawer && <div className="drawer-backdrop" onMouseDown={() => setDrawer(false)}><aside className="ai-drawer" onMouseDown={e => e.stopPropagation()} aria-label="AI 问答">
       <header><div><small>演示问答</small><h2>问问灯灯</h2></div><button aria-label="关闭问答" onClick={() => setDrawer(false)}>×</button></header>
