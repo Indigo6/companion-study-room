@@ -30,10 +30,18 @@ describe('study room preview', () => {
     expect(screen.getByText('视觉预览 · 演示模式')).toBeVisible();
   });
 
+  it('creates a report when the user ends a session early', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('button', { name: '开始专注' }));
+    await userEvent.click(screen.getByRole('button', { name: '提前结束并生成报告' }));
+    expect(await screen.findByRole('region', { name: '本次自习报告' })).toBeVisible();
+    expect(screen.getByText('本次自习已结束')).toBeVisible();
+  });
+
   it('discloses camera privacy and answers locally', async () => {
     render(<App />);
     expect(screen.getByText('关闭时不访问摄像头')).toBeVisible();
-    expect(screen.getByText('摄像头画面不上传、不保存')).toBeVisible();
+    expect(screen.getByText('演示检查完全在本机，不上传画面')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: '问问灯灯' }));
     await userEvent.type(screen.getByPlaceholderText('输入一个学习问题…'), '怎么开始复习？');
     await userEvent.click(screen.getByRole('button', { name: '发送' }));

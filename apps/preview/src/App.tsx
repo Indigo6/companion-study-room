@@ -1,9 +1,11 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { WhiteNoiseEngine } from './audio/whiteNoise';
 import { createAiProvider } from './ai/provider';
-import { createTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
-import { loadSessions, saveSession, summarizeToday } from './storage/sessionRepository';
+import { createTimer, finishTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
+import { loadSessions, saveSession, summarizeToday, type SessionRecord } from './storage/sessionRepository';
 import { CameraSession } from './supervision/cameraSession';
+import { captureVideoFrame } from './supervision/frameCapture';
+import { createPresenceTracker, observePresence, type PresenceResult } from './supervision/presence';
 import './camera-preview.css';
 
 type SceneId = 'rain' | 'forest' | 'coast' | 'cafe';
@@ -18,6 +20,7 @@ const artworkLabels: Record<SceneId, string> = {
   rain: '雨夜城市窗景', forest: '晨雾森林窗景', coast: '黄昏海岸窗景', cafe: '咖啡馆室内窗景',
 };
 const aiProvider = createAiProvider(import.meta.env.VITE_AI_API_URL);
+const visionUsesNetwork = Boolean(import.meta.env.VITE_AI_API_URL);
 
 function SceneArtwork({ scene }: { scene: SceneId }) {
   return <div className={`scene-art art-${scene}`} role="img" aria-label={artworkLabels[scene]}>
@@ -34,8 +37,11 @@ export function App() {
   const [goal, setGoal] = useState('整理第三章笔记，并完成 10 道练习');
   const [pauseCount, setPauseCount] = useState(0);
   const [todaySummary, setTodaySummary] = useState(() => summarizeToday(loadSessions()));
+  const [report, setReport] = useState<SessionRecord | null>(null);
   const [supervising, setSupervising] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [presenceResult, setPresenceResult] = useState<PresenceResult | 'waiting'>('waiting');
+  const [awayCount, setAwayCount] = useState(0);
   const [drawer, setDrawer] = useState(false);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -47,10 +53,13 @@ export function App() {
   const cameraSession = useRef<CameraSession | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const recordedCompletion = useRef(false);
+  const presenceTracker = useRef(createPresenceTracker());
+  const previousPresence = useRef<PresenceResult | 'waiting'>('waiting');
   const scene = scenes.find(item => item.id === sceneId)!;
   const running = timer.phase === 'focus';
   const minutes = Math.floor(timer.remainingMs / 60_000);
   const seconds = Math.floor((timer.remainingMs % 60_000) / 1_000);
+  const presenceText = { waiting: '专注开始后每 45 秒检查', 'stable-present': '状态良好 · 正在专注', 'pending-away': '暂未检测到 · 将再次确认', away: '检测到离席', uncertain: '画面不明确 · 不计离席' }[presenceResult];
 
   useEffect(() => {
     if (!running) return;
@@ -61,13 +70,37 @@ export function App() {
   useEffect(() => {
     if (timer.phase !== 'completed' || recordedCompletion.current) return;
     recordedCompletion.current = true;
-    saveSession(window.localStorage, {
+    const record: SessionRecord = {
       id: crypto.randomUUID(), goal, plannedMinutes: timer.durationMs / 60_000,
-      actualSeconds: Math.round(timer.durationMs / 1_000), pauseCount, awayCount: 0,
-      outcome: 'completed', completedAt: new Date().toISOString(),
-    });
+      actualSeconds: Math.round((timer.durationMs - timer.remainingMs) / 1_000), pauseCount, awayCount,
+      outcome: timer.remainingMs === 0 ? 'completed' : 'abandoned', completedAt: new Date().toISOString(),
+    };
+    saveSession(window.localStorage, record);
+    setReport(record);
     setTodaySummary(summarizeToday(loadSessions()));
-  }, [timer.phase, timer.durationMs, goal, pauseCount]);
+  }, [timer.phase, timer.durationMs, timer.remainingMs, goal, pauseCount, awayCount]);
+
+  useEffect(() => {
+    if (!supervising || !running) return;
+    let disposed = false;
+    const inspect = async () => {
+      if (!videoRef.current) return;
+      try {
+        const frame = await captureVideoFrame(videoRef.current);
+        const status = await aiProvider.inspectFrame(frame);
+        if (disposed) return;
+        const observation = observePresence(presenceTracker.current, status);
+        presenceTracker.current = observation.tracker;
+        setPresenceResult(observation.result);
+        if (observation.result === 'away' && previousPresence.current !== 'away') setAwayCount(count => count + 1);
+        previousPresence.current = observation.result;
+      } catch {
+        if (!disposed) setPresenceResult('uncertain');
+      }
+    };
+    const interval = window.setInterval(inspect, 45_000);
+    return () => { disposed = true; window.clearInterval(interval); };
+  }, [supervising, running]);
 
   useEffect(() => {
     audioEngine.current?.update(sceneId, volume, muted);
@@ -85,6 +118,7 @@ export function App() {
       cameraSession.current?.stop();
       if (videoRef.current) videoRef.current.srcObject = null;
       setSupervising(false);
+      setPresenceResult('waiting');
       return;
     }
     setCameraError('');
@@ -93,6 +127,9 @@ export function App() {
       cameraSession.current = new CameraSession();
       const stream = await cameraSession.current.start();
       if (videoRef.current) videoRef.current.srcObject = stream;
+      presenceTracker.current = createPresenceTracker();
+      previousPresence.current = 'waiting';
+      setPresenceResult('waiting');
       setSupervising(true);
     } catch (error) {
       setCameraError(error instanceof Error ? error.message : '无法访问摄像头');
@@ -137,7 +174,7 @@ export function App() {
       <div className="window-frame"><SceneArtwork scene={scene.id}/></div>
       <div className="desk-line" aria-hidden="true"/>
       <section className={`companion ${running ? 'is-focus' : ''} ${supervising ? 'is-watch' : ''}`} aria-label="AI 伙伴灯灯">
-        <div className="speech"><small>灯灯</small><p>{supervising ? '我会安静看守这段时间。' : running ? '陪你专注中' : '准备好时，我们就开始。'}</p></div>
+        <div className="speech"><small>灯灯</small><p>{supervising && running ? presenceText : supervising ? '摄像头已就绪，开始专注后检查。' : running ? '陪你专注中' : '准备好时，我们就开始。'}</p></div>
         <div className="spirit"><div className="halo"/><div className="face"><i/><i/><b/></div><div className="body"/></div>
       </section>
       <div className={`camera-preview ${supervising ? 'visible' : ''}`} aria-hidden={!supervising}><video ref={videoRef} autoPlay muted playsInline/><span>仅本机实时画面 · 不保存</span></div>
@@ -147,17 +184,18 @@ export function App() {
         <div className="clock">{String(minutes).padStart(2, '0')}<span>:</span>{String(seconds).padStart(2, '0')}</div>
         <div className="goal"><small>本次目标</small><input aria-label="本次目标" value={goal} onChange={event => setGoal(event.target.value)}/></div>
         <button className="start" aria-label={running ? '暂停一下' : timer.phase === 'paused' ? '继续专注' : '开始专注'} onClick={toggleTimer}>{running ? '暂停一下' : timer.phase === 'paused' ? '继续专注' : '开始专注'}<span aria-hidden="true">→</span></button>
+        {(running || timer.phase === 'paused') && <button className="finish" onClick={() => setTimer(current => finishTimer(current, Date.now()))}>提前结束并生成报告</button>}
       </section>
     </section>
 
     <section className="control-dock">
       <div className="ambience"><div className="control-icon">♫</div><div><small>{audioReady ? muted ? '已静音' : '正在播放' : '点击播放'}</small><strong>{scene.noise}</strong></div><button onClick={() => { if (!audioReady) enableAudio(); else setMuted(v => !v); }} aria-label={!audioReady ? '播放白噪音' : muted ? '取消静音' : '静音'}>{!audioReady ? '▶' : muted ? '×' : '◖'}</button><input aria-label="白噪音音量" type="range" min="0" max="100" value={volume} onPointerDown={enableAudio} onChange={e => setVolume(Number(e.target.value))}/><output>{volume}%</output></div>
       <div className="divider"/>
-      <div className="supervision"><div className={`camera-dot ${supervising ? 'on' : ''}`}>◉</div><div><small>摄像头监督</small><strong>{cameraError || (supervising ? '本机预览已开启 · 尚未调用模型' : '关闭时不访问摄像头')}</strong></div><button onClick={toggleSupervision}>{supervising ? '关闭摄像头' : '允许并开启'}</button></div>
+      <div className="supervision"><div className={`camera-dot ${supervising ? 'on' : ''}`}>◉</div><div><small>摄像头监督</small><strong>{cameraError || (supervising ? presenceText : '关闭时不访问摄像头')}</strong></div><button onClick={toggleSupervision}>{supervising ? '关闭摄像头' : '允许并开启'}</button></div>
       <button className="ask" onClick={() => setDrawer(true)} aria-label="问问灯灯"><span>✦</span>问问灯灯</button>
     </section>
 
-    <footer><span>今天已经完成 {todaySummary.completed} 个番茄钟</span><i/><span>最近一次离席：无</span><i/><span>摄像头画面不上传、不保存</span></footer>
+    <footer><span>今天已经完成 {todaySummary.completed} 个番茄钟</span><i/><span>本次离席：{awayCount} 次</span><i/><span>{visionUsesNetwork ? '检查帧临时发送至所配置服务，不保存' : '演示检查完全在本机，不上传画面'}</span></footer>
 
     {drawer && <div className="drawer-backdrop" onMouseDown={() => setDrawer(false)}><aside className="ai-drawer" onMouseDown={e => e.stopPropagation()} aria-label="AI 问答">
       <header><div><small>演示问答</small><h2>问问灯灯</h2></div><button aria-label="关闭问答" onClick={() => setDrawer(false)}>×</button></header>
@@ -165,5 +203,6 @@ export function App() {
       <form onSubmit={submit}><input value={question} onChange={e => setQuestion(e.target.value)} placeholder="输入一个学习问题…" disabled={asking}/><button aria-label="发送" disabled={asking}>{asking ? '…' : '↑'}</button></form>
       <p>{aiProvider.label} · 可通过 VITE_AI_API_URL 配置</p>
     </aside></div>}
+    {report && <div className="report-backdrop"><section className="session-report" aria-label="本次自习报告"><small>SESSION COMPLETE</small><h2>{report.outcome === 'completed' ? '完成得很好' : '本次自习已结束'}</h2><p>{report.goal || '未填写目标'}</p><div><strong>{Math.floor(report.actualSeconds / 60)}<small> 分钟</small></strong><span>暂停 {report.pauseCount} 次</span><span>离席 {report.awayCount} 次</span></div><p className="report-summary">灯灯总结：你已经为目标投入了一段真实的时间。下一次可以从刚才停下的位置继续。</p><button onClick={() => { setReport(null); setTimer(createTimer(timer.durationMs)); }}>收下报告</button></section></div>}
   </main>;
 }

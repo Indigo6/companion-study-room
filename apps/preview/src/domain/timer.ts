@@ -35,3 +35,8 @@ export function resumeTimer(timer: FocusTimer, now: number): FocusTimer {
 export function resetTimer(timer: FocusTimer): FocusTimer {
   return createTimer(timer.durationMs);
 }
+
+export function finishTimer(timer: FocusTimer, now: number): FocusTimer {
+  const current = timer.phase === 'focus' ? tickTimer(timer, now) : timer;
+  return { ...current, phase: 'completed', endsAt: null };
+}

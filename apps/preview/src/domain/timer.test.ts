@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './timer';
+import { createTimer, finishTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './timer';
 
 describe('focus timer', () => {
+  it('can finish an active session early', () => {
+    const running = startTimer(createTimer(60_000), 1_000);
+    expect(finishTimer(running, 21_000)).toMatchObject({ phase: 'completed', remainingMs: 40_000 });
+  });
   it('starts from an absolute end time', () => {
     const timer = startTimer(createTimer(25 * 60_000), 1_000);
     expect(timer.phase).toBe('focus');
