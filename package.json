@@ -1,0 +1,26 @@
+{
+  "name": "companion-study-room",
+  "private": true,
+  "scripts": {
+    "preview:dev": "vite --config apps/preview/vite.config.ts",
+    "preview:build": "vite build --config apps/preview/vite.config.ts",
+    "preview:test": "vitest --config apps/preview/vite.config.ts"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "typescript": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "zustand": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "jsdom": "latest",
+    "vitest": "latest"
+  }
+}
