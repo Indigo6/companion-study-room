@@ -19,8 +19,9 @@ const scenes = [
 const artworkLabels: Record<SceneId, string> = {
   rain: '雨夜城市窗景', forest: '晨雾森林窗景', coast: '黄昏海岸窗景', cafe: '咖啡馆室内窗景',
 };
-const aiProvider = createAiProvider(import.meta.env.VITE_AI_API_URL);
-const visionUsesNetwork = Boolean(import.meta.env.VITE_AI_API_URL);
+declare global { interface Window { companionAi?: { ask(question: string): Promise<string>; inspect(image: string): Promise<'present' | 'absent' | 'uncertain'> } } }
+const aiProvider = createAiProvider(import.meta.env.VITE_AI_API_URL, window.companionAi);
+const visionUsesNetwork = Boolean(import.meta.env.VITE_AI_API_URL || window.companionAi);
 
 function SceneArtwork({ scene }: { scene: SceneId }) {
   return <div className={`scene-art art-${scene}`} role="img" aria-label={artworkLabels[scene]}>
