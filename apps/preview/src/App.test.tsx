@@ -30,11 +30,10 @@ describe('study room preview', () => {
     expect(screen.getByText('视觉预览 · 演示模式')).toBeVisible();
   });
 
-  it('labels supervision as simulated and answers locally', async () => {
+  it('discloses camera privacy and answers locally', async () => {
     render(<App />);
-    expect(screen.getByText('未调用摄像头或在线模型')).toBeVisible();
-    await userEvent.click(screen.getByRole('button', { name: '开启模拟监督' }));
-    expect(screen.getByText('模拟监督已开启')).toBeVisible();
+    expect(screen.getByText('关闭时不访问摄像头')).toBeVisible();
+    expect(screen.getByText('摄像头画面不上传、不保存')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: '问问灯灯' }));
     await userEvent.type(screen.getByPlaceholderText('输入一个学习问题…'), '怎么开始复习？');
     await userEvent.click(screen.getByRole('button', { name: '发送' }));

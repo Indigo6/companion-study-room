@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { WhiteNoiseEngine } from './audio/whiteNoise';
 import { createTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
+import { CameraSession } from './supervision/cameraSession';
+import './camera-preview.css';
 
 type SceneId = 'rain' | 'forest' | 'coast' | 'cafe';
 const scenes = [
@@ -27,6 +29,7 @@ export function App() {
   const [sceneId, setSceneId] = useState<SceneId>('rain');
   const [timer, setTimer] = useState(() => createTimer(25 * 60_000));
   const [supervising, setSupervising] = useState(false);
+  const [cameraError, setCameraError] = useState('');
   const [drawer, setDrawer] = useState(false);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -34,6 +37,8 @@ export function App() {
   const [volume, setVolume] = useState(62);
   const [audioReady, setAudioReady] = useState(false);
   const audioEngine = useRef<WhiteNoiseEngine | null>(null);
+  const cameraSession = useRef<CameraSession | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const scene = scenes.find(item => item.id === sceneId)!;
   const running = timer.phase === 'focus';
   const minutes = Math.floor(timer.remainingMs / 60_000);
@@ -49,11 +54,30 @@ export function App() {
     audioEngine.current?.update(sceneId, volume, muted);
   }, [sceneId, volume, muted]);
 
-  useEffect(() => () => audioEngine.current?.stop(), []);
+  useEffect(() => () => { audioEngine.current?.stop(); cameraSession.current?.stop(); }, []);
 
   const enableAudio = () => {
     if (!audioEngine.current) audioEngine.current = new WhiteNoiseEngine();
     void audioEngine.current.start(sceneId, volume, muted).then(() => setAudioReady(true));
+  };
+
+  const toggleSupervision = async () => {
+    if (supervising) {
+      cameraSession.current?.stop();
+      if (videoRef.current) videoRef.current.srcObject = null;
+      setSupervising(false);
+      return;
+    }
+    setCameraError('');
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('请使用 localhost 或 HTTPS 打开摄像头');
+      cameraSession.current = new CameraSession();
+      const stream = await cameraSession.current.start();
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      setSupervising(true);
+    } catch (error) {
+      setCameraError(error instanceof Error ? error.message : '无法访问摄像头');
+    }
   };
 
   const toggleTimer = () => setTimer(current => {
@@ -92,6 +116,7 @@ export function App() {
         <div className="speech"><small>灯灯</small><p>{supervising ? '我会安静看守这段时间。' : running ? '陪你专注中' : '准备好时，我们就开始。'}</p></div>
         <div className="spirit"><div className="halo"/><div className="face"><i/><i/><b/></div><div className="body"/></div>
       </section>
+      <div className={`camera-preview ${supervising ? 'visible' : ''}`} aria-hidden={!supervising}><video ref={videoRef} autoPlay muted playsInline/><span>仅本机实时画面 · 不保存</span></div>
 
       <section className="timer-card" aria-label="番茄钟">
         <div className="timer-meta"><span>{running ? 'FOCUSING' : timer.phase === 'paused' ? 'PAUSED' : 'READY'}</span><div><button onClick={() => selectDuration(25)}>25 / 5</button><button onClick={() => selectDuration(45)}>45 / 10</button></div></div>
@@ -104,11 +129,11 @@ export function App() {
     <section className="control-dock">
       <div className="ambience"><div className="control-icon">♫</div><div><small>{audioReady ? muted ? '已静音' : '正在播放' : '点击播放'}</small><strong>{scene.noise}</strong></div><button onClick={() => { if (!audioReady) enableAudio(); else setMuted(v => !v); }} aria-label={!audioReady ? '播放白噪音' : muted ? '取消静音' : '静音'}>{!audioReady ? '▶' : muted ? '×' : '◖'}</button><input aria-label="白噪音音量" type="range" min="0" max="100" value={volume} onPointerDown={enableAudio} onChange={e => setVolume(Number(e.target.value))}/><output>{volume}%</output></div>
       <div className="divider"/>
-      <div className="supervision"><div className={`camera-dot ${supervising ? 'on' : ''}`}>◉</div><div><small>模拟监督</small><strong>{supervising ? '模拟监督已开启' : '未调用摄像头或在线模型'}</strong></div><button onClick={() => setSupervising(v => !v)}>{supervising ? '关闭模拟监督' : '开启模拟监督'}</button></div>
+      <div className="supervision"><div className={`camera-dot ${supervising ? 'on' : ''}`}>◉</div><div><small>摄像头监督</small><strong>{cameraError || (supervising ? '本机预览已开启 · 尚未调用模型' : '关闭时不访问摄像头')}</strong></div><button onClick={toggleSupervision}>{supervising ? '关闭摄像头' : '允许并开启'}</button></div>
       <button className="ask" onClick={() => setDrawer(true)} aria-label="问问灯灯"><span>✦</span>问问灯灯</button>
     </section>
 
-    <footer><span>今天已经完成 4 个番茄钟</span><i/><span>最近一次离席：无</span><i/><span>所有监督结果均为模拟</span></footer>
+    <footer><span>今天已经完成 4 个番茄钟</span><i/><span>最近一次离席：无</span><i/><span>摄像头画面不上传、不保存</span></footer>
 
     {drawer && <div className="drawer-backdrop" onMouseDown={() => setDrawer(false)}><aside className="ai-drawer" onMouseDown={e => e.stopPropagation()} aria-label="AI 问答">
       <header><div><small>演示问答</small><h2>问问灯灯</h2></div><button aria-label="关闭问答" onClick={() => setDrawer(false)}>×</button></header>
