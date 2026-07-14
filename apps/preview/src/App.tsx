@@ -1,4 +1,5 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
+import { createTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
 
 type SceneId = 'rain' | 'forest' | 'coast' | 'cafe';
 const scenes = [
@@ -23,7 +24,7 @@ function SceneArtwork({ scene }: { scene: SceneId }) {
 
 export function App() {
   const [sceneId, setSceneId] = useState<SceneId>('rain');
-  const [running, setRunning] = useState(false);
+  const [timer, setTimer] = useState(() => createTimer(25 * 60_000));
   const [supervising, setSupervising] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [question, setQuestion] = useState('');
@@ -31,6 +32,23 @@ export function App() {
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(62);
   const scene = scenes.find(item => item.id === sceneId)!;
+  const running = timer.phase === 'focus';
+  const minutes = Math.floor(timer.remainingMs / 60_000);
+  const seconds = Math.floor((timer.remainingMs % 60_000) / 1_000);
+
+  useEffect(() => {
+    if (!running) return;
+    const id = window.setInterval(() => setTimer(current => tickTimer(current, Date.now())), 250);
+    return () => window.clearInterval(id);
+  }, [running]);
+
+  const toggleTimer = () => setTimer(current => {
+    if (current.phase === 'idle' || current.phase === 'completed') return startTimer(createTimer(current.durationMs), Date.now());
+    if (current.phase === 'paused') return resumeTimer(current, Date.now());
+    return pauseTimer(current, Date.now());
+  });
+
+  const selectDuration = (minutes: number) => setTimer(createTimer(minutes * 60_000));
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -62,10 +80,10 @@ export function App() {
       </section>
 
       <section className="timer-card" aria-label="番茄钟">
-        <div className="timer-meta"><span>{running ? 'FOCUSING' : 'READY'}</span><div><button>25 / 5</button><button>45 / 10</button></div></div>
-        <div className="clock">25<span>:</span>00</div>
+        <div className="timer-meta"><span>{running ? 'FOCUSING' : timer.phase === 'paused' ? 'PAUSED' : 'READY'}</span><div><button onClick={() => selectDuration(25)}>25 / 5</button><button onClick={() => selectDuration(45)}>45 / 10</button></div></div>
+        <div className="clock">{String(minutes).padStart(2, '0')}<span>:</span>{String(seconds).padStart(2, '0')}</div>
         <div className="goal"><small>本次目标</small><input aria-label="本次目标" defaultValue="整理第三章笔记，并完成 10 道练习"/></div>
-        <button className="start" aria-label={running ? '暂停一下' : '开始专注'} onClick={() => setRunning(value => !value)}>{running ? '暂停一下' : '开始专注'}<span aria-hidden="true">→</span></button>
+        <button className="start" aria-label={running ? '暂停一下' : timer.phase === 'paused' ? '继续专注' : '开始专注'} onClick={toggleTimer}>{running ? '暂停一下' : timer.phase === 'paused' ? '继续专注' : '开始专注'}<span aria-hidden="true">→</span></button>
       </section>
     </section>
 
