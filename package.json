@@ -1,26 +1,42 @@
 {
   "name": "companion-study-room",
+  "version": "0.1.0",
+  "description": "桌面优先的 AI 陪伴自习室",
+  "author": "Companion Study Room contributors",
   "private": true,
   "scripts": {
     "preview:dev": "vite --config apps/preview/vite.config.ts",
     "preview:build": "vite build --config apps/preview/vite.config.ts",
-    "preview:test": "vitest --config apps/preview/vite.config.ts"
+    "preview:test": "vitest --config apps/preview/vite.config.ts",
+    "desktop:dev": "npm run preview:build && electron apps/desktop/main.cjs",
+    "desktop:pack": "npm run preview:build && electron-builder --dir",
+    "desktop:dist": "npm run preview:build && electron-builder"
   },
-  "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "zustand": "latest"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@vitejs/plugin-react": "latest",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "jsdom": "latest",
-    "vitest": "latest"
+    "vitest": "latest",
+    "electron": "latest",
+    "electron-builder": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "zustand": "latest"
+  },
+  "main": "apps/desktop/main.cjs",
+  "build": {
+    "appId": "com.companionstudyroom.app",
+    "productName": "伴读",
+    "files": ["apps/desktop/**/*", "apps/preview/dist/**/*", "package.json"],
+    "directories": { "output": "release" },
+    "win": { "target": "nsis" },
+    "linux": { "target": "AppImage", "category": "Education" }
   }
 }
