@@ -1,3 +1,6 @@
 __pycache__/
 *.py[cod]
 .worktrees/
+node_modules/
+apps/preview/dist/
+/preview
