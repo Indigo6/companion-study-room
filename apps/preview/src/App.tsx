@@ -7,7 +7,9 @@ import { CameraSession } from './supervision/cameraSession';
 import { captureVideoFrame } from './supervision/frameCapture';
 import { createPresenceTracker, observePresence, type PresenceResult } from './supervision/presence';
 import { SettingsPanel } from './settings/SettingsPanel';
+import type { AssetState } from './settings/SettingsPanel';
 import { loadPreferences, savePreferences } from './settings/preferences';
+import { loadLocalAsset, type LocalAssetKind } from './assets/localAssetStore';
 import './camera-preview.css';
 
 type SceneId = 'rain' | 'forest' | 'coast' | 'cafe';
@@ -48,6 +50,7 @@ export function App() {
   const [drawer, setDrawer] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [preferences, setPreferences] = useState(loadPreferences);
+  const [assets, setAssets] = useState<AssetState>({ background: null, ambience: null });
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [asking, setAsking] = useState(false);
@@ -55,6 +58,7 @@ export function App() {
   const [volume, setVolume] = useState(62);
   const [audioReady, setAudioReady] = useState(false);
   const audioEngine = useRef<WhiteNoiseEngine | null>(null);
+  const customAudio = useRef<HTMLAudioElement | null>(null);
   const cameraSession = useRef<CameraSession | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const recordedCompletion = useRef(false);
@@ -73,6 +77,12 @@ export function App() {
   }, [running]);
 
   useEffect(() => savePreferences(window.localStorage, preferences), [preferences]);
+
+  useEffect(() => {
+    (['background', 'ambience'] as LocalAssetKind[]).forEach(kind => void loadLocalAsset(kind).then(asset => {
+      if (asset) setAssets(current => ({ ...current, [kind]: { name: asset.name, url: URL.createObjectURL(asset.blob) } }));
+    }).catch(() => undefined));
+  }, []);
 
   useEffect(() => {
     if (timer.phase !== 'completed' || recordedCompletion.current) return;
@@ -111,11 +121,19 @@ export function App() {
 
   useEffect(() => {
     audioEngine.current?.update(sceneId, volume, muted);
+    if (customAudio.current) { customAudio.current.volume = muted ? 0 : volume / 100; }
   }, [sceneId, volume, muted]);
 
-  useEffect(() => () => { audioEngine.current?.stop(); cameraSession.current?.stop(); }, []);
+  useEffect(() => () => { audioEngine.current?.stop(); customAudio.current?.pause(); cameraSession.current?.stop(); }, []);
 
   const enableAudio = () => {
+    if (preferences.ambienceMode === 'custom' && assets.ambience) {
+      audioEngine.current?.stop(); audioEngine.current = null;
+      if (!customAudio.current || customAudio.current.src !== assets.ambience.url) customAudio.current = new Audio(assets.ambience.url);
+      customAudio.current.loop = true; customAudio.current.volume = muted ? 0 : volume / 100;
+      void customAudio.current.play().then(() => setAudioReady(true)); return;
+    }
+    customAudio.current?.pause(); customAudio.current = null;
     if (!audioEngine.current) audioEngine.current = new WhiteNoiseEngine();
     void audioEngine.current.start(sceneId, volume, muted).then(() => setAudioReady(true));
   };
@@ -178,7 +196,7 @@ export function App() {
     </nav>
 
     <section className="workspace">
-      <div className="window-frame"><SceneArtwork scene={scene.id}/></div>
+      <div className="window-frame">{preferences.backgroundMode === 'custom' && assets.background ? <img className="custom-background" src={assets.background.url} alt="自定义学习背景"/> : <SceneArtwork scene={scene.id}/>}</div>
       <div className="desk-line" aria-hidden="true"/>
       <section className={`companion ${running ? 'is-focus' : ''} ${supervising ? 'is-watch' : ''}`} aria-label="AI 伙伴灯灯">
         <div className="speech"><small>灯灯</small><p>{supervising && running ? presenceText : supervising ? '摄像头已就绪，开始专注后检查。' : running ? '陪你专注中' : '准备好时，我们就开始。'}</p></div>
@@ -196,7 +214,7 @@ export function App() {
     </section>
 
     <section className="control-dock">
-      <div className="ambience"><div className="control-icon">♫</div><div><small>{audioReady ? muted ? '已静音' : '正在播放' : '点击播放'}</small><strong>{scene.noise}</strong></div><button onClick={() => { if (!audioReady) enableAudio(); else setMuted(v => !v); }} aria-label={!audioReady ? '播放白噪音' : muted ? '取消静音' : '静音'}>{!audioReady ? '▶' : muted ? '×' : '◖'}</button><input aria-label="白噪音音量" type="range" min="0" max="100" value={volume} onPointerDown={enableAudio} onChange={e => setVolume(Number(e.target.value))}/><output>{volume}%</output></div>
+      <div className="ambience"><div className="control-icon">♫</div><div><small>{audioReady ? muted ? '已静音' : '正在播放' : '点击播放'}</small><strong>{preferences.ambienceMode === 'custom' && assets.ambience ? assets.ambience.name : scene.noise}</strong></div><button onClick={() => { if (!audioReady) enableAudio(); else setMuted(v => !v); }} aria-label={!audioReady ? '播放白噪音' : muted ? '取消静音' : '静音'}>{!audioReady ? '▶' : muted ? '×' : '◖'}</button><input aria-label="白噪音音量" type="range" min="0" max="100" value={volume} onPointerDown={enableAudio} onChange={e => setVolume(Number(e.target.value))}/><output>{volume}%</output></div>
       <div className="divider"/>
       <div className="supervision"><div className={`camera-dot ${supervising ? 'on' : ''}`}>◉</div><div><small>摄像头监督</small><strong>{cameraError || (supervising ? presenceText : '关闭时不访问摄像头')}</strong></div><button onClick={toggleSupervision}>{supervising ? '关闭摄像头' : '允许并开启'}</button></div>
       <button className="ask" onClick={() => setDrawer(true)} aria-label="问问灯灯"><span>✦</span>问问灯灯</button>
@@ -211,6 +229,6 @@ export function App() {
       <p>{aiProvider.label} · 可通过 VITE_AI_API_URL 配置</p>
     </aside></div>}
     {report && <div className="report-backdrop"><section className="session-report" aria-label="本次自习报告"><small>SESSION COMPLETE</small><h2>{report.outcome === 'completed' ? '完成得很好' : '本次自习已结束'}</h2><p>{report.goal || '未填写目标'}</p><div><strong>{Math.floor(report.actualSeconds / 60)}<small> 分钟</small></strong><span>暂停 {report.pauseCount} 次</span><span>离席 {report.awayCount} 次</span></div><p className="report-summary">灯灯总结：你已经为目标投入了一段真实的时间。下一次可以从刚才停下的位置继续。</p><button onClick={() => { setReport(null); setTimer(createTimer(timer.durationMs)); }}>收下报告</button></section></div>}
-    {settingsOpen && <SettingsPanel preferences={preferences} onChange={setPreferences} onClose={() => setSettingsOpen(false)}/>} 
+    {settingsOpen && <SettingsPanel preferences={preferences} assets={assets} onChange={setPreferences} onAssetChange={(kind, value) => setAssets(current => ({ ...current, [kind]: value }))} onClose={() => setSettingsOpen(false)}/>} 
   </main>;
 }

@@ -15,6 +15,8 @@ export interface Preferences {
   companionId: CompanionId;
   reduceMotion: boolean;
   voiceURI: string;
+  backgroundMode: 'scene' | 'custom';
+  ambienceMode: 'scene' | 'custom';
   supervisionIntervalSeconds: number;
   services: Record<ServiceId, ServicePreference>;
 }
@@ -23,7 +25,7 @@ const STORAGE_KEY = 'companion-study-room:preferences:v1';
 
 export function defaultPreferences(): Preferences {
   return {
-    version: 1, companionId: 'lamp', reduceMotion: false, voiceURI: '', supervisionIntervalSeconds: 45,
+    version: 1, companionId: 'lamp', reduceMotion: false, voiceURI: '', backgroundMode: 'scene', ambienceMode: 'scene', supervisionIntervalSeconds: 45,
     services: {
       chat: { provider: 'ollama', enabled: false, baseUrl: 'http://127.0.0.1:11434/v1', model: 'qwen2.5:7b' },
       vision: { provider: 'ollama', enabled: false, baseUrl: 'http://127.0.0.1:11434/v1', model: 'qwen2.5vl:7b' },
