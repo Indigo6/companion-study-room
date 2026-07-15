@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiAiProvider, createAiProvider, DemoAiProvider } from './provider';
+import { ApiAiProvider, CompatibleAiProvider, createAiProvider, DemoAiProvider } from './provider';
 
 describe('AI providers', () => {
   it('keeps a useful offline demo response', async () => {
@@ -24,5 +24,12 @@ describe('AI providers', () => {
   it('prefers the isolated desktop bridge when available', async () => {
     const bridge = { ask: vi.fn().mockResolvedValue('桌面回答'), inspect: vi.fn().mockResolvedValue('present' as const) };
     await expect(createAiProvider('/api/ai', bridge).ask('问题')).resolves.toBe('桌面回答');
+  });
+
+  it('calls a user-configured compatible chat model', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: '配置回答' } }] }) });
+    const provider = new CompatibleAiProvider({ baseUrl: 'http://localhost:11434/v1', model: 'qwen', apiKey: '' }, fetcher);
+    await expect(provider.ask('问题')).resolves.toBe('配置回答');
+    expect(fetcher).toHaveBeenCalledWith('http://localhost:11434/v1/chat/completions', expect.objectContaining({ method: 'POST' }));
   });
 });

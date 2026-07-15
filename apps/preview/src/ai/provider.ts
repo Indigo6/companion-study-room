@@ -52,6 +52,30 @@ export class DesktopAiProvider implements AiProvider {
   }
 }
 
+export class CompatibleAiProvider implements AiProvider {
+  readonly label = '自定义 AI 服务';
+  constructor(private readonly config: { baseUrl: string; model: string; apiKey: string }, private readonly fetcher: typeof fetch = fetch) {}
+  async ask(question: string): Promise<string> {
+    const response = await this.completion([{ role: 'system', content: '你是简洁、支持性的学习伙伴。' }, { role: 'user', content: question }]);
+    return response;
+  }
+  async inspectFrame(frame: Blob): Promise<'present' | 'absent' | 'uncertain'> {
+    const image = await blobToDataUrl(frame);
+    const answer = (await this.completion([{ role: 'system', content: '只回答 present、absent 或 uncertain。' }, { role: 'user', content: [{ type: 'image_url', image_url: { url: image } }] }])).toLowerCase();
+    return answer.includes('absent') ? 'absent' : answer.includes('present') ? 'present' : 'uncertain';
+  }
+  private async completion(messages: unknown[]): Promise<string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.config.apiKey) headers.Authorization = `Bearer ${this.config.apiKey}`;
+    const response = await this.fetcher(`${this.config.baseUrl.replace(/\/$/, '')}/chat/completions`, { method: 'POST', headers, body: JSON.stringify({ model: this.config.model, messages, temperature: 0.2, max_tokens: 500 }) });
+    if (!response.ok) throw new Error(`AI 服务返回 ${response.status}`);
+    const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) throw new Error('AI 服务响应格式不兼容');
+    return content;
+  }
+}
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
