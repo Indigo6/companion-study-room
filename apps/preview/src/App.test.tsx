@@ -9,6 +9,13 @@ describe('study room preview', () => {
     expect(screen.getByText('视觉预览 · 演示模式')).toBeVisible();
   });
 
+  it('opens a persistent settings center', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('button', { name: '打开设置' }));
+    expect(screen.getByRole('region', { name: '设置中心' })).toBeVisible();
+    expect(screen.getByRole('button', { name: /芽芽/ })).toBeVisible();
+  });
+
   it('switches between all four atmospheric scenes', async () => {
     render(<App />);
     expect(screen.getByLabelText('雨夜城市窗景')).toBeVisible();

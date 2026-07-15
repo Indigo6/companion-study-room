@@ -6,6 +6,8 @@ import { loadSessions, saveSession, summarizeToday, type SessionRecord } from '.
 import { CameraSession } from './supervision/cameraSession';
 import { captureVideoFrame } from './supervision/frameCapture';
 import { createPresenceTracker, observePresence, type PresenceResult } from './supervision/presence';
+import { SettingsPanel } from './settings/SettingsPanel';
+import { loadPreferences, savePreferences } from './settings/preferences';
 import './camera-preview.css';
 
 type SceneId = 'rain' | 'forest' | 'coast' | 'cafe';
@@ -44,6 +46,8 @@ export function App() {
   const [presenceResult, setPresenceResult] = useState<PresenceResult | 'waiting'>('waiting');
   const [awayCount, setAwayCount] = useState(0);
   const [drawer, setDrawer] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [preferences, setPreferences] = useState(loadPreferences);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [asking, setAsking] = useState(false);
@@ -67,6 +71,8 @@ export function App() {
     const id = window.setInterval(() => setTimer(current => tickTimer(current, Date.now())), 250);
     return () => window.clearInterval(id);
   }, [running]);
+
+  useEffect(() => savePreferences(window.localStorage, preferences), [preferences]);
 
   useEffect(() => {
     if (timer.phase !== 'completed' || recordedCompletion.current) return;
@@ -99,9 +105,9 @@ export function App() {
         if (!disposed) setPresenceResult('uncertain');
       }
     };
-    const interval = window.setInterval(inspect, 45_000);
+    const interval = window.setInterval(inspect, preferences.supervisionIntervalSeconds * 1_000);
     return () => { disposed = true; window.clearInterval(interval); };
-  }, [supervising, running]);
+  }, [supervising, running, preferences.supervisionIntervalSeconds]);
 
   useEffect(() => {
     audioEngine.current?.update(sceneId, volume, muted);
@@ -157,12 +163,12 @@ export function App() {
     finally { setAsking(false); }
   };
 
-  return <main className={`app scene-${scene.id}`} aria-label={`${scene.name}场景`}>
+  return <main className={`app scene-${scene.id} companion-${preferences.companionId} ${preferences.reduceMotion ? 'reduce-motion' : ''}`} aria-label={`${scene.name}场景`}>
     <div className="atmosphere" aria-hidden="true"><span/><span/><span/><span/></div>
     <header className="topbar">
       <div className="brand"><i className="brand-light"/><span>伴读</span><em>STUDY WITH ME</em></div>
       <div className="demo-pill"><i/>视觉预览 · 演示模式</div>
-      <div className="today"><span>今日专注</span><strong>{String(Math.floor(todaySummary.seconds / 3600)).padStart(2, '0')}<small>h</small> {String(Math.floor(todaySummary.seconds % 3600 / 60)).padStart(2, '0')}<small>m</small></strong></div>
+      <div className="today"><span>今日专注</span><strong>{String(Math.floor(todaySummary.seconds / 3600)).padStart(2, '0')}<small>h</small> {String(Math.floor(todaySummary.seconds % 3600 / 60)).padStart(2, '0')}<small>m</small></strong><button className="settings-trigger" aria-label="打开设置" onClick={() => setSettingsOpen(true)}>⚙</button></div>
     </header>
 
     <nav className="scene-switcher" aria-label="选择学习场景">
@@ -205,5 +211,6 @@ export function App() {
       <p>{aiProvider.label} · 可通过 VITE_AI_API_URL 配置</p>
     </aside></div>}
     {report && <div className="report-backdrop"><section className="session-report" aria-label="本次自习报告"><small>SESSION COMPLETE</small><h2>{report.outcome === 'completed' ? '完成得很好' : '本次自习已结束'}</h2><p>{report.goal || '未填写目标'}</p><div><strong>{Math.floor(report.actualSeconds / 60)}<small> 分钟</small></strong><span>暂停 {report.pauseCount} 次</span><span>离席 {report.awayCount} 次</span></div><p className="report-summary">灯灯总结：你已经为目标投入了一段真实的时间。下一次可以从刚才停下的位置继续。</p><button onClick={() => { setReport(null); setTimer(createTimer(timer.durationMs)); }}>收下报告</button></section></div>}
+    {settingsOpen && <SettingsPanel preferences={preferences} onChange={setPreferences} onClose={() => setSettingsOpen(false)}/>} 
   </main>;
 }

@@ -1,0 +1,7 @@
+.settings-trigger { width: 34px; height: 34px; margin-left: 8px; border: 1px solid #ffffff1a; border-radius: 9px; background: #ffffff08; color: #a9b8b7; cursor: pointer; }
+.settings-trigger:hover, .settings-trigger:focus-visible { border-color: #8ae0bd66; color: #8ae0bd; outline: none; }
+.companion-sprout .face { background: linear-gradient(145deg, #b9e8b9, #5fa879); }
+.companion-sprout .body { background: linear-gradient(150deg, #3d6754, #17372d); }
+.companion-cloud .face { background: linear-gradient(145deg, #dbeaf0, #8db4c2); }
+.companion-cloud .body { background: linear-gradient(150deg, #536c83, #263544); }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation: none !important; transition-duration: .01ms !important; }
