@@ -5,8 +5,8 @@ export interface AiProvider {
 }
 
 export interface DesktopAiBridge {
-  ask(question: string): Promise<string>;
-  inspect(image: string): Promise<'present' | 'absent' | 'uncertain'>;
+  ask(question: string, config?: { baseUrl: string; model: string }): Promise<string>;
+  inspect(image: string, config?: { baseUrl: string; model: string }): Promise<'present' | 'absent' | 'uncertain'>;
 }
 
 export class DemoAiProvider implements AiProvider {
@@ -45,10 +45,10 @@ export class ApiAiProvider implements AiProvider {
 
 export class DesktopAiProvider implements AiProvider {
   readonly label = '桌面 AI 服务';
-  constructor(private readonly bridge: DesktopAiBridge) {}
-  ask(question: string): Promise<string> { return this.bridge.ask(question); }
+  constructor(private readonly bridge: DesktopAiBridge, private readonly config?: { baseUrl: string; model: string }) {}
+  ask(question: string): Promise<string> { return this.bridge.ask(question, this.config); }
   async inspectFrame(frame: Blob): Promise<'present' | 'absent' | 'uncertain'> {
-    return this.bridge.inspect(await blobToDataUrl(frame));
+    return this.bridge.inspect(await blobToDataUrl(frame), this.config);
   }
 }
 

@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { WhiteNoiseEngine } from './audio/whiteNoise';
-import { CompatibleAiProvider, createAiProvider } from './ai/provider';
+import { CompatibleAiProvider, createAiProvider, DesktopAiProvider } from './ai/provider';
 import { createTimer, finishTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
 import { loadSessions, saveSession, summarizeToday, type SessionRecord } from './storage/sessionRepository';
 import { CameraSession } from './supervision/cameraSession';
@@ -11,6 +11,7 @@ import type { AssetState } from './settings/SettingsPanel';
 import { loadPreferences, savePreferences } from './settings/preferences';
 import type { ServiceId } from './settings/preferences';
 import { loadSessionSecrets, saveSessionSecret } from './settings/secretStore';
+import { testServiceConnection } from './settings/providerTemplates';
 import { loadLocalAsset, type LocalAssetKind } from './assets/localAssetStore';
 import './camera-preview.css';
 
@@ -25,7 +26,7 @@ const scenes = [
 const artworkLabels: Record<SceneId, string> = {
   rain: '雨夜城市窗景', forest: '晨雾森林窗景', coast: '黄昏海岸窗景', cafe: '咖啡馆室内窗景',
 };
-declare global { interface Window { companionAi?: { ask(question: string): Promise<string>; inspect(image: string): Promise<'present' | 'absent' | 'uncertain'> } } }
+declare global { interface Window { companionAi?: { ask(question: string, config?: { baseUrl: string; model: string }): Promise<string>; inspect(image: string, config?: { baseUrl: string; model: string }): Promise<'present' | 'absent' | 'uncertain'> }; companionSettings?: { secretStatus(): Promise<Record<ServiceId, boolean>>; saveSecret(service: ServiceId, value: string): Promise<void>; testService(service: ServiceId, config: { baseUrl: string; model: string }): Promise<boolean> } } }
 const aiProvider = createAiProvider(import.meta.env.VITE_AI_API_URL, window.companionAi);
 const visionUsesNetwork = Boolean(import.meta.env.VITE_AI_API_URL || window.companionAi);
 
@@ -53,6 +54,7 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [preferences, setPreferences] = useState(loadPreferences);
   const [secrets, setSecrets] = useState(loadSessionSecrets);
+  const [savedSecrets, setSavedSecrets] = useState<Record<ServiceId, boolean>>({ chat: false, vision: false, speech: false });
   const [assets, setAssets] = useState<AssetState>({ background: null, ambience: null });
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -80,6 +82,7 @@ export function App() {
   }, [running]);
 
   useEffect(() => savePreferences(window.localStorage, preferences), [preferences]);
+  useEffect(() => { if (window.companionSettings) void window.companionSettings.secretStatus().then(setSavedSecrets); }, []);
 
   useEffect(() => {
     (['background', 'ambience'] as LocalAssetKind[]).forEach(kind => void loadLocalAsset(kind).then(asset => {
@@ -108,7 +111,7 @@ export function App() {
       try {
         const frame = await captureVideoFrame(videoRef.current);
         const visionPreference = preferences.services.vision;
-        const provider = visionPreference.enabled && !window.companionAi ? new CompatibleAiProvider({ baseUrl: visionPreference.baseUrl, model: visionPreference.model, apiKey: secrets.vision }) : aiProvider;
+        const provider = visionPreference.enabled ? window.companionAi ? new DesktopAiProvider(window.companionAi, visionPreference) : new CompatibleAiProvider({ baseUrl: visionPreference.baseUrl, model: visionPreference.model, apiKey: secrets.vision }) : aiProvider;
         const status = await provider.inspectFrame(frame);
         if (disposed) return;
         const observation = observePresence(presenceTracker.current, status);
@@ -181,7 +184,7 @@ export function App() {
     const submittedQuestion = question;
     setQuestion('');
     setAsking(true);
-    try { const chat = preferences.services.chat; const provider = chat.enabled && !window.companionAi ? new CompatibleAiProvider({ baseUrl: chat.baseUrl, model: chat.model, apiKey: secrets.chat }) : aiProvider; setAnswer(await provider.ask(submittedQuestion)); }
+    try { const chat = preferences.services.chat; const provider = chat.enabled ? window.companionAi ? new DesktopAiProvider(window.companionAi, chat) : new CompatibleAiProvider({ baseUrl: chat.baseUrl, model: chat.model, apiKey: secrets.chat }) : aiProvider; setAnswer(await provider.ask(submittedQuestion)); }
     catch (error) { setAnswer(error instanceof Error ? `暂时无法回答：${error.message}` : '暂时无法回答'); }
     finally { setAsking(false); }
   };
@@ -234,6 +237,6 @@ export function App() {
       <p>{aiProvider.label} · 可通过 VITE_AI_API_URL 配置</p>
     </aside></div>}
     {report && <div className="report-backdrop"><section className="session-report" aria-label="本次自习报告"><small>SESSION COMPLETE</small><h2>{report.outcome === 'completed' ? '完成得很好' : '本次自习已结束'}</h2><p>{report.goal || '未填写目标'}</p><div><strong>{Math.floor(report.actualSeconds / 60)}<small> 分钟</small></strong><span>暂停 {report.pauseCount} 次</span><span>离席 {report.awayCount} 次</span></div><p className="report-summary">灯灯总结：你已经为目标投入了一段真实的时间。下一次可以从刚才停下的位置继续。</p><button onClick={() => { setReport(null); setTimer(createTimer(timer.durationMs)); }}>收下报告</button></section></div>}
-    {settingsOpen && <SettingsPanel preferences={preferences} assets={assets} secrets={secrets} onChange={setPreferences} onSecretChange={(id: ServiceId, value: string) => { setSecrets(current => ({ ...current, [id]: value })); saveSessionSecret(id, value); }} onAssetChange={(kind, value) => setAssets(current => ({ ...current, [kind]: value }))} onClose={() => setSettingsOpen(false)}/>} 
+    {settingsOpen && <SettingsPanel preferences={preferences} assets={assets} secrets={secrets} savedSecrets={savedSecrets} onChange={setPreferences} onSecretChange={(id: ServiceId, value: string) => { setSecrets(current => ({ ...current, [id]: value })); if (window.companionSettings) void window.companionSettings.saveSecret(id, value).then(() => setSavedSecrets(current => ({ ...current, [id]: Boolean(value) }))); else saveSessionSecret(id, value); }} onTestService={(id, config, key) => window.companionSettings ? window.companionSettings.testService(id, config) : testServiceConnection(config, key)} onAssetChange={(kind, value) => setAssets(current => ({ ...current, [kind]: value }))} onClose={() => setSettingsOpen(false)}/>} 
   </main>;
 }
