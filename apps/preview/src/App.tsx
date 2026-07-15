@@ -12,6 +12,7 @@ import { loadPreferences, savePreferences } from './settings/preferences';
 import type { ServiceId } from './settings/preferences';
 import { loadSessionSecrets, saveSessionSecret } from './settings/secretStore';
 import { testServiceConnection } from './settings/providerTemplates';
+import { playSpeechBlob, requestCompatibleSpeech, speakWithSystem } from './speech/speech';
 import { loadLocalAsset, type LocalAssetKind } from './assets/localAssetStore';
 import './camera-preview.css';
 
@@ -26,7 +27,7 @@ const scenes = [
 const artworkLabels: Record<SceneId, string> = {
   rain: '雨夜城市窗景', forest: '晨雾森林窗景', coast: '黄昏海岸窗景', cafe: '咖啡馆室内窗景',
 };
-declare global { interface Window { companionAi?: { ask(question: string, config?: { baseUrl: string; model: string }): Promise<string>; inspect(image: string, config?: { baseUrl: string; model: string }): Promise<'present' | 'absent' | 'uncertain'> }; companionSettings?: { secretStatus(): Promise<Record<ServiceId, boolean>>; saveSecret(service: ServiceId, value: string): Promise<void>; testService(service: ServiceId, config: { baseUrl: string; model: string }): Promise<boolean> } } }
+declare global { interface Window { companionAi?: { ask(question: string, config?: { baseUrl: string; model: string }): Promise<string>; inspect(image: string, config?: { baseUrl: string; model: string }): Promise<'present' | 'absent' | 'uncertain'> }; companionSettings?: { secretStatus(): Promise<Record<ServiceId, boolean>>; saveSecret(service: ServiceId, value: string): Promise<void>; testService(service: ServiceId, config: { baseUrl: string; model: string }): Promise<boolean>; synthesize(config: { baseUrl: string; model: string; voice?: string }, text: string): Promise<string> } } }
 const aiProvider = createAiProvider(import.meta.env.VITE_AI_API_URL, window.companionAi);
 const visionUsesNetwork = Boolean(import.meta.env.VITE_AI_API_URL || window.companionAi);
 
@@ -59,6 +60,7 @@ export function App() {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [asking, setAsking] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(62);
   const [audioReady, setAudioReady] = useState(false);
@@ -184,9 +186,20 @@ export function App() {
     const submittedQuestion = question;
     setQuestion('');
     setAsking(true);
-    try { const chat = preferences.services.chat; const provider = chat.enabled ? window.companionAi ? new DesktopAiProvider(window.companionAi, chat) : new CompatibleAiProvider({ baseUrl: chat.baseUrl, model: chat.model, apiKey: secrets.chat }) : aiProvider; setAnswer(await provider.ask(submittedQuestion)); }
+    try { const chat = preferences.services.chat; const provider = chat.enabled ? window.companionAi ? new DesktopAiProvider(window.companionAi, chat) : new CompatibleAiProvider({ baseUrl: chat.baseUrl, model: chat.model, apiKey: secrets.chat }) : aiProvider; const reply = await provider.ask(submittedQuestion); setAnswer(reply); if (preferences.speakResponses) void speakReply(reply); }
     catch (error) { setAnswer(error instanceof Error ? `暂时无法回答：${error.message}` : '暂时无法回答'); }
     finally { setAsking(false); }
+  };
+
+  const speakReply = async (text: string) => {
+    const speech = preferences.services.speech;
+    try {
+      if (!speech.enabled) { await speakWithSystem(text, preferences.voiceURI, setSpeaking); return; }
+      let blob: Blob;
+      if (window.companionSettings) { const base64 = await window.companionSettings.synthesize(speech, text); const bytes = Uint8Array.from(atob(base64), character => character.charCodeAt(0)); blob = new Blob([bytes], { type: 'audio/mpeg' }); }
+      else blob = await requestCompatibleSpeech(text, speech, secrets.speech);
+      await playSpeechBlob(blob, setSpeaking);
+    } catch { setSpeaking(false); }
   };
 
   return <main className={`app scene-${scene.id} companion-${preferences.companionId} ${preferences.reduceMotion ? 'reduce-motion' : ''}`} aria-label={`${scene.name}场景`}>
@@ -206,8 +219,8 @@ export function App() {
     <section className="workspace">
       <div className="window-frame">{preferences.backgroundMode === 'custom' && assets.background ? <img className="custom-background" src={assets.background.url} alt="自定义学习背景"/> : <SceneArtwork scene={scene.id}/>}</div>
       <div className="desk-line" aria-hidden="true"/>
-      <section className={`companion ${running ? 'is-focus' : ''} ${supervising ? 'is-watch' : ''}`} aria-label="AI 伙伴灯灯">
-        <div className="speech"><small>灯灯</small><p>{supervising && running ? presenceText : supervising ? '摄像头已就绪，开始专注后检查。' : running ? '陪你专注中' : '准备好时，我们就开始。'}</p></div>
+      <section className={`companion ${running ? 'is-focus' : ''} ${supervising ? 'is-watch' : ''} ${speaking ? 'is-speaking' : ''}`} aria-label="AI 伙伴">
+        <div className="speech"><small>{{ lamp: '灯灯', sprout: '芽芽', cloud: '云朵' }[preferences.companionId]}</small><p>{supervising && running ? presenceText : supervising ? '摄像头已就绪，开始专注后检查。' : speaking ? '正在为你朗读' : running ? '陪你专注中' : '准备好时，我们就开始。'}</p></div>
         <div className="spirit"><div className="halo"/><div className="face"><i/><i/><b/></div><div className="body"/></div>
       </section>
       <div className={`camera-preview ${supervising ? 'visible' : ''}`} aria-hidden={!supervising}><video ref={videoRef} autoPlay muted playsInline/><span>仅本机实时画面 · 不保存</span></div>

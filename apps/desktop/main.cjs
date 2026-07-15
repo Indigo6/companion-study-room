@@ -29,6 +29,12 @@ app.whenReady().then(() => {
     const response = await fetch(`${config.baseUrl.replace(/\/$/, '')}/models`, { headers });
     if (!response.ok) throw new Error(`连接失败（HTTP ${response.status}）`); return true;
   });
+  ipcMain.handle('settings:synthesize', async (_event, config, text) => {
+    const headers = { 'Content-Type': 'application/json' }; const key = settings.getSecret('speech'); if (key) headers.Authorization = `Bearer ${key}`;
+    const response = await fetch(`${config.baseUrl.replace(/\/$/, '')}/audio/speech`, { method: 'POST', headers, body: JSON.stringify({ model: config.model, voice: config.voice || 'alloy', input: text, response_format: 'mp3' }) });
+    if (!response.ok) throw new Error(`语音服务返回 ${response.status}`);
+    return Buffer.from(await response.arrayBuffer()).toString('base64');
+  });
   ipcMain.handle('companion:ask', (_event, payload) => ai.ask(payload.question, undefined, { ...payload.config, apiKey: settings.getSecret('chat') }));
   ipcMain.handle('companion:inspect', (_event, payload) => ai.inspect(payload.image, undefined, { ...payload.config, apiKey: settings.getSecret('vision') }));
   createWindow();
