@@ -64,3 +64,15 @@ npm run desktop:pack
 生成的应用位于 `release/`。执行 `npm run desktop:dist` 可按当前操作系统生成安装包；Windows 构建目标为 NSIS，Linux 为 AppImage。
 
 Web 版本同时包含 PWA manifest 和离线缓存，可在支持的移动浏览器中“添加到主屏幕”。移动端摄像头同样要求 HTTPS，后台计时能力受手机系统的节电策略影响。
+
+## 桌面设置中心
+
+桌面版右上角设置中心支持：
+
+- 适配不同窗口高度并保持主自习界面无滚动。
+- 三种官方陪伴形象、系统音色和 AI 回复自动朗读。
+- 导入不超过 12 MB 的本地背景图片，以及不超过 40 MB 的本地白噪音/音乐。
+- 分别配置问答、视觉监督和 TTS 服务；预置 OpenAI、DeepSeek、硅基流动、Ollama 与自定义 OpenAI-compatible 服务。
+- 使用 macOS Keychain 或 Windows DPAPI 加密保存 API Key，渲染页面无法读取已保存的明文。
+
+自定义图片和音频保存在本机 IndexedDB 中，不会上传。自定义桌宠、Live2D 和完整视觉素材升级不属于当前一期范围。

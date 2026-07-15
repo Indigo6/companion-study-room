@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import './styles.css';
 import './scene-art.css';
+import './responsive-shell.css';
+import './settings.css';
+import './settings-extra.css';
 
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
 
