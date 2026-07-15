@@ -37,6 +37,16 @@
     "files": ["apps/desktop/**/*", "apps/preview/dist/**/*", "package.json"],
     "directories": { "output": "release" },
     "win": { "target": "nsis" },
+    "mac": {
+      "target": "dmg",
+      "identity": "-",
+      "hardenedRuntime": true,
+      "entitlements": "apps/desktop/entitlements.mac.plist",
+      "entitlementsInherit": "apps/desktop/entitlements.mac.plist",
+      "extendInfo": {
+        "NSCameraUsageDescription": "伴读需要使用摄像头，在专注期间进行用户明确开启的在席监督。"
+      }
+    },
     "linux": { "target": "AppImage", "category": "Education" }
   }
 }
