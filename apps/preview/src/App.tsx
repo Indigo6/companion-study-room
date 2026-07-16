@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { WhiteNoiseEngine } from './audio/whiteNoise';
+import { MediaAmbienceEngine } from './audio/mediaAmbience';
 import { CompatibleAiProvider, createAiProvider, DesktopAiProvider } from './ai/provider';
 import { createTimer, finishTimer, pauseTimer, resumeTimer, startTimer, tickTimer } from './domain/timer';
 import { loadSessions, saveSession, summarizeToday, type SessionRecord } from './storage/sessionRepository';
@@ -46,7 +47,8 @@ export function App() {
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(62);
   const [audioReady, setAudioReady] = useState(false);
-  const audioEngine = useRef<WhiteNoiseEngine | null>(null);
+  const audioEngine = useRef<MediaAmbienceEngine | null>(null);
+  const fallbackNoise = useRef<WhiteNoiseEngine | null>(null);
   const customAudio = useRef<HTMLAudioElement | null>(null);
   const cameraSession = useRef<CameraSession | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -113,20 +115,25 @@ export function App() {
 
   useEffect(() => {
     audioEngine.current?.update(sceneId, volume, muted);
+    fallbackNoise.current?.update(sceneId, volume, muted);
     if (customAudio.current) { customAudio.current.volume = muted ? 0 : volume / 100; }
   }, [sceneId, volume, muted]);
 
-  useEffect(() => () => { audioEngine.current?.stop(); customAudio.current?.pause(); cameraSession.current?.stop(); }, []);
+  useEffect(() => () => { audioEngine.current?.stop(); fallbackNoise.current?.stop(); customAudio.current?.pause(); cameraSession.current?.stop(); }, []);
 
   const enableAudio = () => {
     if (preferences.ambienceMode === 'custom' && assets.ambience) {
       audioEngine.current?.stop(); audioEngine.current = null;
+      fallbackNoise.current?.stop(); fallbackNoise.current = null;
       if (!customAudio.current || customAudio.current.src !== assets.ambience.url) customAudio.current = new Audio(assets.ambience.url);
       customAudio.current.loop = true; customAudio.current.volume = muted ? 0 : volume / 100;
       void customAudio.current.play().then(() => setAudioReady(true)); return;
     }
     customAudio.current?.pause(); customAudio.current = null;
-    if (!audioEngine.current) audioEngine.current = new WhiteNoiseEngine();
+    if (!audioEngine.current) audioEngine.current = new MediaAmbienceEngine(undefined, (fallbackScene, fallbackVolume, fallbackMuted) => {
+      if (!fallbackNoise.current) fallbackNoise.current = new WhiteNoiseEngine();
+      void fallbackNoise.current.start(fallbackScene, fallbackVolume, fallbackMuted);
+    });
     void audioEngine.current.start(sceneId, volume, muted).then(() => setAudioReady(true));
   };
 
