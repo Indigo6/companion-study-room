@@ -16,6 +16,18 @@ describe('study room preview', () => {
     expect(screen.getByRole('button', { name: /芽芽/ })).toBeVisible();
   });
 
+  it('shows bundled scene credits and license links', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('button', { name: '打开设置' }));
+    await userEvent.click(screen.getByRole('button', { name: /素材鸣谢/ }));
+    expect(screen.getByText('Imeel Bagdisar · Pexels')).toBeVisible();
+    expect(screen.getByText('EminYILDIRIM · Freesound CC0')).toBeVisible();
+    expect(screen.getByText('Dey Kheireddine · Pexels')).toBeVisible();
+    expect(screen.getByText('Bonus Studio · Pexels')).toBeVisible();
+    expect(screen.getAllByRole('link', { name: '查看来源' })).toHaveLength(8);
+    expect(screen.getAllByRole('link', { name: '查看许可证' })).toHaveLength(8);
+  });
+
   it('switches between all four atmospheric scenes', async () => {
     render(<App />);
     expect(screen.getByLabelText('雨夜城市窗景')).toBeVisible();
