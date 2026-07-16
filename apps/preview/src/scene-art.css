@@ -1,6 +1,17 @@
 .window-frame { overflow: hidden; }
 .window-frame::before, .window-frame::after { z-index: 8; pointer-events: none; }
 .scene-art { position: absolute; inset: 0; overflow: hidden; }
+.media-art { background:#101918; }
+.scene-media { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.art-rain .scene-media { object-position:center 54%; }
+.art-forest .scene-media { object-position:center 45%; }
+.art-coast .scene-media { object-position:center 48%; }
+.art-cafe .scene-media { object-position:center 52%; }
+.scene-grade { position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,rgba(5,12,16,.08),rgba(6,10,12,.32)),radial-gradient(circle at 50% 40%,transparent 38%,rgba(4,8,10,.22) 100%); box-shadow:inset 0 0 80px rgba(3,8,10,.28); }
+.scene-rain .scene-grade { background:linear-gradient(180deg,rgba(10,18,30,.12),rgba(7,11,18,.38)),radial-gradient(circle at 58% 45%,transparent 32%,rgba(5,8,15,.28) 100%); }
+.scene-forest .scene-grade { background:linear-gradient(180deg,rgba(13,28,23,.08),rgba(8,20,17,.32)); }
+.scene-coast .scene-grade { background:linear-gradient(180deg,rgba(30,23,35,.06),rgba(13,18,28,.3)); }
+.scene-cafe .scene-grade { background:linear-gradient(180deg,rgba(38,25,17,.06),rgba(17,12,10,.34)); }
 
 .art-rain { background: linear-gradient(#142d3d, #1b2635 60%, #080e16); }
 .moon { position:absolute; right:12%; top:13%; width:54px; height:54px; border-radius:50%; background:#dce7df; box-shadow:0 0 50px #b7e2df66; }

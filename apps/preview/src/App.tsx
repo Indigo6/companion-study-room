@@ -14,31 +14,13 @@ import { loadSessionSecrets, saveSessionSecret } from './settings/secretStore';
 import { testServiceConnection } from './settings/providerTemplates';
 import { playSpeechBlob, requestCompatibleSpeech, speakWithSystem } from './speech/speech';
 import { loadLocalAsset, type LocalAssetKind } from './assets/localAssetStore';
+import { SceneArtwork } from './scenes/SceneArtwork';
+import { getSceneMedia, sceneMedia as scenes, type SceneId } from './scenes/sceneMedia';
 import './camera-preview.css';
 
-type SceneId = 'rain' | 'forest' | 'coast' | 'cafe';
-const scenes = [
-  { id: 'rain' as const, name: '雨夜书房', noise: '窗外雨声', time: '22:18', icon: '⌁' },
-  { id: 'forest' as const, name: '森林晨雾', noise: '林间风声', time: '06:42', icon: '♧' },
-  { id: 'coast' as const, name: '海边黄昏', noise: '缓慢潮声', time: '18:27', icon: '≈' },
-  { id: 'cafe' as const, name: '安静咖啡馆', noise: '咖啡馆低语', time: '15:06', icon: '⌇' },
-];
-
-const artworkLabels: Record<SceneId, string> = {
-  rain: '雨夜城市窗景', forest: '晨雾森林窗景', coast: '黄昏海岸窗景', cafe: '咖啡馆室内窗景',
-};
 declare global { interface Window { companionAi?: { ask(question: string, config?: { baseUrl: string; model: string }): Promise<string>; inspect(image: string, config?: { baseUrl: string; model: string }): Promise<'present' | 'absent' | 'uncertain'> }; companionSettings?: { secretStatus(): Promise<Record<ServiceId, boolean>>; saveSecret(service: ServiceId, value: string): Promise<void>; testService(service: ServiceId, config: { baseUrl: string; model: string }): Promise<boolean>; synthesize(config: { baseUrl: string; model: string; voice?: string }, text: string): Promise<string> } } }
 const aiProvider = createAiProvider(import.meta.env.VITE_AI_API_URL, window.companionAi);
 const visionUsesNetwork = Boolean(import.meta.env.VITE_AI_API_URL || window.companionAi);
-
-function SceneArtwork({ scene }: { scene: SceneId }) {
-  return <div className={`scene-art art-${scene}`} role="img" aria-label={artworkLabels[scene]}>
-    {scene === 'rain' && <><div className="moon"/><div className="city back"/><div className="city front"/><div className="neon">夜读</div></>}
-    {scene === 'forest' && <><div className="forest-moon"/><div className="mist m1"/><div className="mist m2"/><div className="trees back"/><div className="trees front"/></>}
-    {scene === 'coast' && <><div className="sunset-sun"/><div className="island"/><div className="sea"><i/><i/><i/></div><div className="birds">⌁　⌁</div></>}
-    {scene === 'cafe' && <><div className="pendant p1"/><div className="pendant p2"/><div className="shelves"><i/><i/><i/></div><div className="counter"><span/><b/></div></>}
-  </div>;
-}
 
 export function App() {
   const [sceneId, setSceneId] = useState<SceneId>('rain');
@@ -71,7 +53,7 @@ export function App() {
   const recordedCompletion = useRef(false);
   const presenceTracker = useRef(createPresenceTracker());
   const previousPresence = useRef<PresenceResult | 'waiting'>('waiting');
-  const scene = scenes.find(item => item.id === sceneId)!;
+  const scene = getSceneMedia(sceneId);
   const running = timer.phase === 'focus';
   const minutes = Math.floor(timer.remainingMs / 60_000);
   const seconds = Math.floor((timer.remainingMs % 60_000) / 1_000);
@@ -217,7 +199,7 @@ export function App() {
     </nav>
 
     <section className="workspace">
-      <div className="window-frame">{preferences.backgroundMode === 'custom' && assets.background ? <img className="custom-background" src={assets.background.url} alt="自定义学习背景"/> : <SceneArtwork scene={scene.id}/>}</div>
+      <div className="window-frame">{preferences.backgroundMode === 'custom' && assets.background ? <img className="custom-background" src={assets.background.url} alt="自定义学习背景"/> : <SceneArtwork scene={scene.id} reduceMotion={preferences.reduceMotion}/>}</div>
       <div className="desk-line" aria-hidden="true"/>
       <section className={`companion ${running ? 'is-focus' : ''} ${supervising ? 'is-watch' : ''} ${speaking ? 'is-speaking' : ''}`} aria-label="AI 伙伴">
         <div className="speech"><small>{{ lamp: '灯灯', sprout: '芽芽', cloud: '云朵' }[preferences.companionId]}</small><p>{supervising && running ? presenceText : supervising ? '摄像头已就绪，开始专注后检查。' : speaking ? '正在为你朗读' : running ? '陪你专注中' : '准备好时，我们就开始。'}</p></div>
