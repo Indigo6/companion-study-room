@@ -3,12 +3,14 @@ import { removeLocalAsset, saveLocalAsset, type LocalAssetKind } from '../assets
 import type { CompanionId, Preferences, ServiceId } from './preferences';
 import { applyProviderTemplate } from './providerTemplates';
 import { speakWithSystem } from '../speech/speech';
+import { sceneMedia } from '../scenes/sceneMedia';
 
-type Tab = 'appearance' | 'sound' | 'ai' | 'privacy';
+type Tab = 'appearance' | 'sound' | 'ai' | 'privacy' | 'credits';
 export type AssetState = Record<LocalAssetKind, { name: string; url: string } | null>;
 const tabs: Array<{ id: Tab; label: string; glyph: string }> = [
   { id: 'appearance', label: '外观', glyph: '◐' }, { id: 'sound', label: '声音', glyph: '♫' },
   { id: 'ai', label: 'AI 服务', glyph: '✦' }, { id: 'privacy', label: '隐私监督', glyph: '◎' },
+  { id: 'credits', label: '素材鸣谢', glyph: '◇' },
 ];
 const companions: Array<{ id: CompanionId; name: string; note: string }> = [
   { id: 'lamp', name: '灯灯', note: '温暖、安静' }, { id: 'sprout', name: '芽芽', note: '清醒、轻快' }, { id: 'cloud', name: '云朵', note: '柔和、松弛' },
@@ -36,12 +38,14 @@ export function SettingsPanel({ preferences, assets, secrets, savedSecrets, onCh
       {tab === 'sound' && <><AssetPicker kind="ambience" title="自定义白噪音" accept="audio/*" asset={assets.ambience} selected={preferences.ambienceMode === 'custom'} onImport={importAsset} onSelect={() => onChange({ ...preferences, ambienceMode: 'custom' })} onClear={clearAsset}/><Section title="系统音色" note="在线 TTS 启用时优先使用 AI 服务中的音色。"><Toggle checked={preferences.speakResponses} label="自动朗读 AI 回复" onChange={checked => onChange({ ...preferences, speakResponses: checked })}/><div className="voice-row"><select value={preferences.voiceURI} onChange={event => onChange({ ...preferences, voiceURI: event.target.value })}>{voices.length ? voices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}</option>) : <option value="">系统默认音色</option>}</select><button onClick={() => void speakWithSystem('准备好时，我们就开始。', preferences.voiceURI, () => undefined)}>试听</button></div></Section></>} 
       {tab === 'ai' && <>{(['chat', 'vision', 'speech'] as ServiceId[]).map(id => <ServiceCard key={id} id={id} value={preferences.services[id]} apiKey={secrets[id]} saved={savedSecrets[id]} onApiKey={value => onSecretChange(id, value)} onTest={() => onTestService(id, preferences.services[id], secrets[id])} update={patch => updateService(id, patch)}/>)}</>}
       {tab === 'privacy' && <Section title="视觉监督"><label className="field"><span>检查间隔</span><select value={preferences.supervisionIntervalSeconds} onChange={event => onChange({ ...preferences, supervisionIntervalSeconds: Number(event.target.value) })}><option value="30">30 秒</option><option value="45">45 秒</option><option value="60">60 秒</option></select></label><p className="privacy-note">摄像头默认关闭。只有监督和计时同时开启时才抽取临时检查帧。</p></Section>}
+      {tab === 'credits' && <Section title="官方场景素材" note="背景经过裁切、调色和压缩；环境音经过剪辑、响度统一并制作成循环。"><div className="credit-list">{sceneMedia.map(scene => <article className="credit-scene" key={scene.id}><header><i>{scene.icon}</i><div><strong>{scene.name}</strong><small>{scene.noise}</small></div></header><CreditRow label="画面" credit={scene.visualCredit} source={scene.visualSourceUrl} license={scene.visualLicenseUrl}/><CreditRow label="声音" credit={scene.audioCredit} source={scene.audioSourceUrl} license={scene.audioLicenseUrl}/></article>)}</div><p className="credit-note">详细处理方式与文件校验值记录在项目的 THIRD_PARTY_ASSETS.md 中。</p></Section>}
     </div></div><footer><span><i/>设置和素材只保存在本机</span><button onClick={onClose}>完成</button></footer>
   </section></div>;
 }
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) { return <section className="setting-section"><header><h3>{title}</h3>{note && <p>{note}</p>}</header>{children}</section>; }
 function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange(value: boolean): void }) { return <label className="toggle-row"><span>{label}</span><input type="checkbox" checked={checked} onChange={event => onChange(event.target.checked)}/><i/></label>; }
+function CreditRow({ label, credit, source, license }: { label: string; credit: string; source: string; license: string }) { return <div className="credit-row"><span>{label}</span><strong>{credit}</strong><nav><a href={source} target="_blank" rel="noreferrer">查看来源</a><a href={license} target="_blank" rel="noreferrer">查看许可证</a></nav></div>; }
 function AssetPicker({ kind, title, accept, asset, selected, onImport, onSelect, onClear }: { kind: LocalAssetKind; title: string; accept: string; asset: AssetState[LocalAssetKind]; selected: boolean; onImport(event: ChangeEvent<HTMLInputElement>, kind: LocalAssetKind): void; onSelect(): void; onClear(kind: LocalAssetKind): void }) { return <Section title={title} note={kind === 'background' ? 'PNG、JPG 或 WebP，最大 12 MB。' : '选择本机音频，最大 40 MB，文件不会上传。'}><div className="asset-row"><div><strong>{asset?.name ?? '尚未导入'}</strong><small>{asset ? selected ? '正在使用' : '已保存在本机' : '使用官方场景'}</small></div><label className="file-button">选择文件<input type="file" accept={accept} onChange={event => void onImport(event, kind)}/></label>{asset && <><button onClick={onSelect}>使用</button><button className="danger" onClick={() => void onClear(kind)}>移除</button></>}</div></Section>; }
 function ServiceCard({ id, value, apiKey, saved, onApiKey, onTest, update }: { id: ServiceId; value: Preferences['services'][ServiceId]; apiKey: string; saved: boolean; onApiKey(value: string): void; onTest(): Promise<boolean>; update(value: Partial<Preferences['services'][ServiceId]>): void }) {
   const names = { chat: '学习问答', vision: '视觉监督', speech: '语音合成' }; const [status, setStatus] = useState('');
