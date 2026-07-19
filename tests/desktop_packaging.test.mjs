@@ -31,6 +31,7 @@ test('desktop workflow retains updater metadata and publishes version tags', asy
   assert.match(workflow, /release\/\*\.yml/);
   assert.match(workflow, /release\/\*\.blockmap/);
   assert.match(workflow, /release\/\*\.zip/);
+  assert.doesNotMatch(workflow, /latest-mac-x64\.json|macos-x64/);
   assert.match(workflow, /electron-builder --win nsis portable --x64/);
   assert.match(workflow, /release\/\*setup\*\.exe/);
   assert.match(workflow, /release\/\*portable\*\.exe/);

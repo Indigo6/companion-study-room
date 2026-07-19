@@ -9,12 +9,13 @@ test('desktop workflow builds downloadable Windows and macOS installers on deman
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /runs-on: windows-latest/);
   assert.match(workflow, /runs-on: macos-15\b/);
-  assert.match(workflow, /runs-on: macos-15-intel/);
-  assert.equal((workflow.match(/npm run preview:test -- --run/g) ?? []).length, 3);
+  assert.doesNotMatch(workflow, /macos-15-intel|macos-x64|macOS Intel/);
+  assert.equal((workflow.match(/npm run preview:test -- --run/g) ?? []).length, 2);
   assert.match(workflow, /electron-builder --win nsis portable --x64/);
   assert.match(workflow, /electron-builder --mac dmg zip --arm64/);
-  assert.match(workflow, /electron-builder --mac dmg zip --x64/);
-  assert.equal((workflow.match(/actions\/upload-artifact@v4/g) ?? []).length, 3);
+  assert.doesNotMatch(workflow, /electron-builder --mac dmg zip --x64/);
+  assert.equal((workflow.match(/actions\/upload-artifact@v4/g) ?? []).length, 2);
+  assert.match(workflow, /needs: \[windows-x64, macos-arm64\]/);
   assert.match(workflow, /retention-days: 14/);
 });
 
@@ -27,5 +28,5 @@ test('macOS builds use a verifiable ad-hoc signature suitable for Apple Silicon 
   assert.match(packageJson.build.mac.extendInfo.NSCameraUsageDescription, /摄像头/);
   assert.match(entitlements, /com\.apple\.security\.cs\.allow-jit/);
   assert.match(entitlements, /com\.apple\.security\.cs\.disable-library-validation/);
-  assert.equal((workflow.match(/codesign --verify --deep --strict/g) ?? []).length, 2);
+  assert.equal((workflow.match(/codesign --verify --deep --strict/g) ?? []).length, 1);
 });
