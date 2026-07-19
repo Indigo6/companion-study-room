@@ -213,7 +213,6 @@ export function App() {
     <div className="atmosphere" aria-hidden="true"><span/><span/><span/><span/></div>
     <header className="topbar">
       <div className="brand"><i className="brand-light"/><span>伴读</span><em>STUDY WITH ME</em></div>
-      <div className="demo-pill"><i/>视觉预览 · 演示模式</div>
       <div className="today"><span>今日专注</span><strong>{String(Math.floor(todaySummary.seconds / 3600)).padStart(2, '0')}<small>h</small> {String(Math.floor(todaySummary.seconds % 3600 / 60)).padStart(2, '0')}<small>m</small></strong><button className="settings-trigger" aria-label="打开设置" onClick={() => setSettingsOpen(true)}>⚙</button></div>
     </header>
 

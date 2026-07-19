@@ -20,25 +20,26 @@ export interface SceneMedia {
 
 const pexelsLicense = 'https://www.pexels.com/legal-pages/license/';
 const cc0License = 'https://creativecommons.org/publicdomain/zero/1.0/';
+const pixabayLicense = 'https://pixabay.com/service/license-summary/';
 
 export const sceneMedia: readonly SceneMedia[] = [
   {
     id: 'rain', name: '雨天', noise: '雨滴绿噪音', time: '22:18', icon: '⌁',
     artworkLabel: '雨中绿叶', videoUrl: './media/scenes/rain.webm', posterUrl: './media/scenes/rain.webp', ambienceUrl: './media/ambience/rain.ogg',
     visualCredit: 'Hemanth K M · Pexels', visualSourceUrl: 'https://www.pexels.com/video/shallow-focus-of-green-leaves-wet-with-rain-5487781/', visualLicenseUrl: pexelsLicense,
-    audioCredit: 'Bryce835 · Freesound CC0', audioSourceUrl: 'https://freesound.org/people/Bryce835/sounds/751684/', audioLicenseUrl: cc0License,
+    audioCredit: 'gingerleegalaxy_1 · Pixabay', audioSourceUrl: 'https://pixabay.com/zh/sound-effects/nature-rain-drops-on-window-green-noise-mix-231100/', audioLicenseUrl: pixabayLicense,
   },
   {
-    id: 'forest', name: '森林', noise: '林间风声', time: '06:42', icon: '♧',
-    artworkLabel: '晨雾森林窗景', videoUrl: './media/scenes/forest.webm', posterUrl: './media/scenes/forest.webp', ambienceUrl: './media/ambience/forest.ogg',
-    visualCredit: 'Yeşim Çolak · Pexels', visualSourceUrl: 'https://www.pexels.com/video/serene-misty-forest-landscape-in-early-morning-33378206/', visualLicenseUrl: pexelsLicense,
-    audioCredit: 'EminYILDIRIM · Freesound CC0', audioSourceUrl: 'https://freesound.org/people/EminYILDIRIM/sounds/595873/', audioLicenseUrl: cc0License,
+    id: 'forest', name: '森林', noise: '森林风声与鸟鸣', time: '06:42', icon: '♧',
+    artworkLabel: '绿树与天空', videoUrl: './media/scenes/forest.webm', posterUrl: './media/scenes/forest.webp', ambienceUrl: './media/ambience/forest.ogg',
+    visualCredit: 'Pexels contributor · Pexels', visualSourceUrl: 'https://www.pexels.com/video/green-trees-and-beautiful-sky-26840816/', visualLicenseUrl: pexelsLicense,
+    audioCredit: 'Ambient_House · Pixabay', audioSourceUrl: 'https://pixabay.com/zh/sound-effects/nature-forest-park-with-wind-and-bird-calls-321622/', audioLicenseUrl: pixabayLicense,
   },
   {
-    id: 'coast', name: '海边', noise: '缓慢潮声', time: '18:27', icon: '≈',
-    artworkLabel: '黄昏海岸窗景', videoUrl: './media/scenes/coast.webm', posterUrl: './media/scenes/coast.webp', ambienceUrl: './media/ambience/coast.ogg',
-    visualCredit: 'Dey Kheireddine · Pexels', visualSourceUrl: 'https://www.pexels.com/video/ocean-during-sunset-3937539/', visualLicenseUrl: pexelsLicense,
-    audioCredit: 'davidgtr1 · Freesound CC0', audioSourceUrl: 'https://freesound.org/people/davidgtr1/sounds/581444/', audioLicenseUrl: cc0License,
+    id: 'coast', name: '海边', noise: '轻柔海浪与远处海鸥', time: '18:27', icon: '≈',
+    artworkLabel: '宁静沙滩海浪', videoUrl: './media/scenes/coast.webm', posterUrl: './media/scenes/coast.webp', ambienceUrl: './media/ambience/coast.ogg',
+    visualCredit: '정규송 Nui MALAMA · Pexels', visualSourceUrl: 'https://www.pexels.com/video/serene-ocean-waves-on-sandy-beach-36494874/', visualLicenseUrl: pexelsLicense,
+    audioCredit: 'JonathanSlatterMusic · Pixabay', audioSourceUrl: 'https://pixabay.com/zh/sound-effects/nature-sea-gently-lapping-waves-far-away-seagulls-486892/', audioLicenseUrl: pixabayLicense,
   },
   {
     id: 'cafe', name: '咖啡馆', noise: '咖啡馆低语', time: '15:06', icon: '⌇',

@@ -5,7 +5,7 @@ import { SceneArtwork } from './SceneArtwork';
 describe('SceneArtwork', () => {
   it('renders an ambient inline video for the selected scene', () => {
     render(<SceneArtwork scene="coast" reduceMotion={false}/>);
-    const video = screen.getByLabelText('黄昏海岸窗景');
+    const video = screen.getByLabelText('宁静沙滩海浪');
     expect(video).toHaveAttribute('src', './media/scenes/coast.webm');
     expect(video).toHaveAttribute('poster', './media/scenes/coast.webp');
     expect(video).toHaveAttribute('autoplay');
@@ -16,8 +16,8 @@ describe('SceneArtwork', () => {
 
   it('uses the poster when reduced motion is enabled', () => {
     render(<SceneArtwork scene="forest" reduceMotion/>);
-    expect(screen.getByRole('img', { name: '晨雾森林窗景' })).toHaveAttribute('src', './media/scenes/forest.webp');
-    expect(screen.queryByLabelText('晨雾森林窗景', { selector: 'video' })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '绿树与天空' })).toHaveAttribute('src', './media/scenes/forest.webp');
+    expect(screen.queryByLabelText('绿树与天空', { selector: 'video' })).not.toBeInTheDocument();
   });
 
   it('falls back to the poster when video loading fails', () => {

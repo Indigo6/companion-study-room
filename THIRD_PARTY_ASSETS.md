@@ -5,6 +5,7 @@ This ledger covers media distributed inside 伴读. Source files and editing pro
 ## License references
 
 - Pexels License: https://www.pexels.com/legal-pages/license/
+- Pixabay Content License: https://pixabay.com/service/license-summary/
 - Creative Commons CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
 
 ## Bundled assets
@@ -16,24 +17,24 @@ All source pages and license labels were reviewed on 2026-07-19. Video sources w
 - Visual: “Shallow Focus of Green Leaves Wet with Rain” by Hemanth K M — https://www.pexels.com/video/shallow-focus-of-green-leaves-wet-with-rain-5487781/ — Pexels License.
   - `media/scenes/rain.webm`: `69053fccc61b9f6d9ed710e6d59c1d34b97719f369802b4a3c5fd5c9c44c2b67`
   - `media/scenes/rain.webp`: `4cc2be96e00ee86f949608f7b267954d3b44f1e995a3b2b1714bddfcd33d873b`
-- Audio: “Rain Ambience” by Bryce835 — https://freesound.org/people/Bryce835/sounds/751684/ — Creative Commons CC0 1.0.
-  - `media/ambience/rain.ogg`: `e9a634f61c67d7481c9ac53401aa57c36ab6d5727a93dc6d9223d85e553a1dc9`
+- Audio: “Rain drops on window Green noise mix” by gingerleegalaxy_1 — https://pixabay.com/zh/sound-effects/nature-rain-drops-on-window-green-noise-mix-231100/ — Pixabay Content License.
+  - `media/ambience/rain.ogg`: `e1f4f457c7b01458300b16e65f90f967c89febe0be22e9d7e855a7eebdb6b59a`
 
 ### Forest
 
-- Visual: “Serene Misty Forest Landscape in Early Morning” by Yeşim Çolak — https://www.pexels.com/video/serene-misty-forest-landscape-in-early-morning-33378206/ — Pexels License.
-  - `media/scenes/forest.webm`: `e4b766761f09e91215d677880c4bba811941f10251e3673937cd21c495c7873f`
-  - `media/scenes/forest.webp`: `776f2baccd07f1b8eab3c08cfd805a173e52421175feaf8cb4a1c7bf29c4c431`
-- Audio: “Forest Ambience” by EminYILDIRIM — https://freesound.org/people/EminYILDIRIM/sounds/595873/ — Creative Commons CC0 1.0.
-  - `media/ambience/forest.ogg`: `161b43da354b3e8426c4cd2e05bd56a8072ceabdff8c98e6a52cd71ab5b96e51`
+- Visual: “Green Trees and Beautiful Sky” by a Pexels contributor — https://www.pexels.com/video/green-trees-and-beautiful-sky-26840816/ — Pexels License.
+  - `media/scenes/forest.webm`: `392908919e1eed72dbb002b3c0a73e64b4ca52b14b21e4ac87643e1f8d9943e5`
+  - `media/scenes/forest.webp`: `9cd30bcfda32f9e9f010b42270851be448561be2502ee5963abcebe4dc56995f`
+- Audio: “Forest Park With Wind and Bird Calls” by Ambient_House — https://pixabay.com/zh/sound-effects/nature-forest-park-with-wind-and-bird-calls-321622/ — Pixabay Content License.
+  - `media/ambience/forest.ogg`: `f226b836faf1e35002e527b6ac5eccc78881d133459422eb359ba42aba9b96da`
 
 ### Coast
 
-- Visual: “Ocean During Sunset” by Dey Kheireddine — https://www.pexels.com/video/ocean-during-sunset-3937539/ — Pexels License.
-  - `media/scenes/coast.webm`: `4631923c553bee231d3529563b3221de6c35afc04a029f11a0a7e61d2a0fc8f9`
-  - `media/scenes/coast.webp`: `8836a383721e40d9928dc25579b35c2a97dc2573ae48f9bbdda5e7c5fe9d30f0`
-- Audio: “Ocean waves, Relaxing Waves, Tranquil Geo” by davidgtr1 — https://freesound.org/people/davidgtr1/sounds/581444/ — Creative Commons CC0 1.0.
-  - `media/ambience/coast.ogg`: `eba0c55900d44a1ae06d29d021ec7f3f8f17abecc579900c30ef9f11c1b3669c`
+- Visual: “Serene Ocean Waves on Sandy Beach” by 정규송 Nui MALAMA — https://www.pexels.com/video/serene-ocean-waves-on-sandy-beach-36494874/ — Pexels License.
+  - `media/scenes/coast.webm`: `00a5d84d91f171557a8e203b86627d772fcc407351c8155595e09942c83bc2ca`
+  - `media/scenes/coast.webp`: `2e957511cf6fe221cb61a2b99e5445f15bd89ed06ff63aed57c1035081a462ad`
+- Audio: “Sea gently lapping waves far away seagulls” by JonathanSlatterMusic — https://pixabay.com/zh/sound-effects/nature-sea-gently-lapping-waves-far-away-seagulls-486892/ — Pixabay Content License.
+  - `media/ambience/coast.ogg`: `292276e6677d74fb0fdc28bea0a7fbc4c8460654faf078c5fe9794648aa6cb64`
 
 ### Cafe
 
