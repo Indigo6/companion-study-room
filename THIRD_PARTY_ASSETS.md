@@ -9,13 +9,13 @@ This ledger covers media distributed inside 伴读. Source files and editing pro
 
 ## Bundled assets
 
-All source pages and license labels were reviewed on 2026-07-16. Video sources were cropped/scaled to 1920×1080, color graded, stripped of audio, shortened to a calm loop, and encoded as VP9 WebM with a WebP fallback poster. Audio sources were high/low-pass filtered, normalized to -28 LUFS with a -3 dB true-peak ceiling, extended to five minutes, faded at the boundaries, and encoded as Ogg Vorbis.
+All source pages and license labels were reviewed on 2026-07-19. Video sources were cropped/scaled to 1920×1080, stripped of audio, shortened to a calm loop, and encoded as VP9 WebM with a WebP fallback poster. Audio sources were high/low-pass filtered, normalized to -28 LUFS with a -3 dB true-peak ceiling, extended to five minutes, faded at the boundaries, and encoded as Ogg Vorbis.
 
 ### Rain
 
-- Visual: “Rainy Nights” by Imeel Bagdisar — https://www.pexels.com/video/rainy-nights-4458918/ — Pexels License.
-  - `media/scenes/rain.webm`: `b95580f00be658a5ad417cb04af853e869edeff16bef03dbb116ae04ee64601d`
-  - `media/scenes/rain.webp`: `91d8436c25e0503cddbc10d52b5489c9b3bbfd498df7a21ea4fc1c26d4b98688`
+- Visual: “Shallow Focus of Green Leaves Wet with Rain” by Hemanth K M — https://www.pexels.com/video/shallow-focus-of-green-leaves-wet-with-rain-5487781/ — Pexels License.
+  - `media/scenes/rain.webm`: `69053fccc61b9f6d9ed710e6d59c1d34b97719f369802b4a3c5fd5c9c44c2b67`
+  - `media/scenes/rain.webp`: `4cc2be96e00ee86f949608f7b267954d3b44f1e995a3b2b1714bddfcd33d873b`
 - Audio: “Rain Ambience” by Bryce835 — https://freesound.org/people/Bryce835/sounds/751684/ — Creative Commons CC0 1.0.
   - `media/ambience/rain.ogg`: `e9a634f61c67d7481c9ac53401aa57c36ab6d5727a93dc6d9223d85e553a1dc9`
 

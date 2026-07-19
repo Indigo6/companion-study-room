@@ -7,23 +7,24 @@ type Fallback = (scene: SceneId, volume: number, muted: boolean) => void;
 export class MediaAmbienceEngine {
   private active?: HTMLAudioElement;
   private activeScene?: SceneId;
-  private fadeTimer?: number;
   private volume = 0;
   private muted = false;
 
   constructor(
     private readonly createAudio: AudioFactory = () => new Audio(),
     private readonly onFallback: Fallback = () => undefined,
+    private readonly onPlaying: () => void = () => undefined,
   ) {}
 
   async start(scene: SceneId, volume: number, muted: boolean): Promise<void> {
     this.volume = volume;
     this.muted = muted;
+    this.active?.pause();
     const channel = this.prepare(scene);
     channel.volume = normalizedVolume(volume, muted);
     this.active = channel;
     this.activeScene = scene;
-    try { await channel.play(); }
+    try { await channel.play(); this.onPlaying(); }
     catch { this.onFallback(scene, volume, muted); }
   }
 
@@ -35,11 +36,34 @@ export class MediaAmbienceEngine {
       this.active.volume = normalizedVolume(volume, muted);
       return;
     }
-    this.crossFade(scene);
+    const previous = this.active;
+    previous.pause();
+    const next = this.prepare(scene);
+    next.volume = normalizedVolume(volume, muted);
+    this.active = next;
+    this.activeScene = scene;
+    void next.play().then(() => this.onPlaying()).catch(() => this.onFallback(scene, this.volume, this.muted));
+  }
+
+  pause(): void { this.active?.pause(); }
+
+  select(scene: SceneId, volume: number, muted: boolean): void {
+    this.volume = volume;
+    this.muted = muted;
+    this.active?.pause();
+    const channel = this.prepare(scene);
+    channel.volume = normalizedVolume(volume, muted);
+    this.active = channel;
+    this.activeScene = scene;
+  }
+
+  async resume(): Promise<void> {
+    if (!this.active) return;
+    try { await this.active.play(); this.onPlaying(); }
+    catch { if (this.activeScene) this.onFallback(this.activeScene, this.volume, this.muted); }
   }
 
   stop(): void {
-    if (this.fadeTimer) window.clearInterval(this.fadeTimer);
     this.active?.pause();
     this.active = undefined;
     this.activeScene = undefined;
@@ -54,26 +78,4 @@ export class MediaAmbienceEngine {
     return channel;
   }
 
-  private crossFade(scene: SceneId): void {
-    const previous = this.active!;
-    const next = this.prepare(scene);
-    const target = normalizedVolume(this.volume, this.muted);
-    next.volume = 0;
-    this.active = next;
-    this.activeScene = scene;
-    void next.play().catch(() => this.onFallback(scene, this.volume, this.muted));
-    if (this.fadeTimer) window.clearInterval(this.fadeTimer);
-    let step = 0;
-    this.fadeTimer = window.setInterval(() => {
-      step += 1;
-      const progress = Math.min(1, step / 12);
-      previous.volume = Math.max(0, target * (1 - progress));
-      next.volume = target * progress;
-      if (progress === 1) {
-        window.clearInterval(this.fadeTimer);
-        this.fadeTimer = undefined;
-        previous.pause();
-      }
-    }, 50);
-  }
 }

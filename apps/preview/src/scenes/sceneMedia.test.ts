@@ -16,7 +16,8 @@ describe('scene media manifest', () => {
   });
 
   it('returns the scene metadata by id', () => {
-    expect(getSceneMedia('coast').name).toBe('海边黄昏');
+    expect(sceneMedia.map(scene => scene.name)).toEqual(['雨天', '森林', '海边', '咖啡馆']);
+    expect(getSceneMedia('rain').visualSourceUrl).toContain('5487781');
     expect(getSceneMedia('cafe').noise).toBe('咖啡馆低语');
   });
 });

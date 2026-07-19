@@ -20,7 +20,7 @@ describe('study room preview', () => {
     render(<App />);
     await userEvent.click(screen.getByRole('button', { name: '打开设置' }));
     await userEvent.click(screen.getByRole('button', { name: /素材鸣谢/ }));
-    expect(screen.getByText('Imeel Bagdisar · Pexels')).toBeVisible();
+    expect(screen.getByText('Hemanth K M · Pexels')).toBeVisible();
     expect(screen.getByText('EminYILDIRIM · Freesound CC0')).toBeVisible();
     expect(screen.getByText('Dey Kheireddine · Pexels')).toBeVisible();
     expect(screen.getByText('Bonus Studio · Pexels')).toBeVisible();
@@ -30,15 +30,21 @@ describe('study room preview', () => {
 
   it('switches between all four atmospheric scenes', async () => {
     render(<App />);
-    expect(screen.getByLabelText('雨夜城市窗景')).toBeVisible();
-    await userEvent.click(screen.getByRole('button', { name: '森林晨雾' }));
-    expect(screen.getByRole('main', { name: '森林晨雾场景' })).toBeVisible();
+    expect(screen.getByLabelText('雨中绿叶')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: '森林' }));
+    expect(screen.getByRole('main', { name: '森林场景' })).toBeVisible();
     expect(screen.getByText('林间风声')).toBeVisible();
     expect(screen.getByLabelText('晨雾森林窗景')).toBeVisible();
-    await userEvent.click(screen.getByRole('button', { name: '海边黄昏' }));
+    await userEvent.click(screen.getByRole('button', { name: '海边' }));
     expect(screen.getByLabelText('黄昏海岸窗景')).toBeVisible();
-    await userEvent.click(screen.getByRole('button', { name: '安静咖啡馆' }));
+    await userEvent.click(screen.getByRole('button', { name: '咖啡馆' }));
     expect(screen.getByLabelText('咖啡馆室内窗景')).toBeVisible();
+  });
+
+  it('uses standard play and pause ambience controls', () => {
+    render(<App />);
+    expect(screen.getByRole('button', { name: '播放白噪音' })).toHaveTextContent('▶');
+    expect(screen.getByRole('slider', { name: '白噪音音量' })).toHaveValue('62');
   });
 
   it('starts a visual focus session and keeps demo disclosure', async () => {

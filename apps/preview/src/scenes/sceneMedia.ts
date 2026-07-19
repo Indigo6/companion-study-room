@@ -23,25 +23,25 @@ const cc0License = 'https://creativecommons.org/publicdomain/zero/1.0/';
 
 export const sceneMedia: readonly SceneMedia[] = [
   {
-    id: 'rain', name: '雨夜书房', noise: '窗外雨声', time: '22:18', icon: '⌁',
-    artworkLabel: '雨夜城市窗景', videoUrl: './media/scenes/rain.webm', posterUrl: './media/scenes/rain.webp', ambienceUrl: './media/ambience/rain.ogg',
-    visualCredit: 'Imeel Bagdisar · Pexels', visualSourceUrl: 'https://www.pexels.com/video/rainy-nights-4458918/', visualLicenseUrl: pexelsLicense,
+    id: 'rain', name: '雨天', noise: '雨滴绿噪音', time: '22:18', icon: '⌁',
+    artworkLabel: '雨中绿叶', videoUrl: './media/scenes/rain.webm', posterUrl: './media/scenes/rain.webp', ambienceUrl: './media/ambience/rain.ogg',
+    visualCredit: 'Hemanth K M · Pexels', visualSourceUrl: 'https://www.pexels.com/video/shallow-focus-of-green-leaves-wet-with-rain-5487781/', visualLicenseUrl: pexelsLicense,
     audioCredit: 'Bryce835 · Freesound CC0', audioSourceUrl: 'https://freesound.org/people/Bryce835/sounds/751684/', audioLicenseUrl: cc0License,
   },
   {
-    id: 'forest', name: '森林晨雾', noise: '林间风声', time: '06:42', icon: '♧',
+    id: 'forest', name: '森林', noise: '林间风声', time: '06:42', icon: '♧',
     artworkLabel: '晨雾森林窗景', videoUrl: './media/scenes/forest.webm', posterUrl: './media/scenes/forest.webp', ambienceUrl: './media/ambience/forest.ogg',
     visualCredit: 'Yeşim Çolak · Pexels', visualSourceUrl: 'https://www.pexels.com/video/serene-misty-forest-landscape-in-early-morning-33378206/', visualLicenseUrl: pexelsLicense,
     audioCredit: 'EminYILDIRIM · Freesound CC0', audioSourceUrl: 'https://freesound.org/people/EminYILDIRIM/sounds/595873/', audioLicenseUrl: cc0License,
   },
   {
-    id: 'coast', name: '海边黄昏', noise: '缓慢潮声', time: '18:27', icon: '≈',
+    id: 'coast', name: '海边', noise: '缓慢潮声', time: '18:27', icon: '≈',
     artworkLabel: '黄昏海岸窗景', videoUrl: './media/scenes/coast.webm', posterUrl: './media/scenes/coast.webp', ambienceUrl: './media/ambience/coast.ogg',
     visualCredit: 'Dey Kheireddine · Pexels', visualSourceUrl: 'https://www.pexels.com/video/ocean-during-sunset-3937539/', visualLicenseUrl: pexelsLicense,
     audioCredit: 'davidgtr1 · Freesound CC0', audioSourceUrl: 'https://freesound.org/people/davidgtr1/sounds/581444/', audioLicenseUrl: cc0License,
   },
   {
-    id: 'cafe', name: '安静咖啡馆', noise: '咖啡馆低语', time: '15:06', icon: '⌇',
+    id: 'cafe', name: '咖啡馆', noise: '咖啡馆低语', time: '15:06', icon: '⌇',
     artworkLabel: '咖啡馆室内窗景', videoUrl: './media/scenes/cafe.webm', posterUrl: './media/scenes/cafe.webp', ambienceUrl: './media/ambience/cafe.ogg',
     visualCredit: 'Bonus Studio · Pexels', visualSourceUrl: 'https://www.pexels.com/video/inside-an-empty-cafe-5498709/', visualLicenseUrl: pexelsLicense,
     audioCredit: 'mikemoons · Freesound CC0', audioSourceUrl: 'https://freesound.org/people/mikemoons/sounds/579500/', audioLicenseUrl: cc0License,

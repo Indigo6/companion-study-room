@@ -28,8 +28,7 @@ describe('MediaAmbienceEngine', () => {
     expect(channels[0].play).toHaveBeenCalledOnce();
   });
 
-  it('cross-fades to a different scene and applies mute changes', async () => {
-    vi.useFakeTimers();
+  it('stops the old scene before playing a different scene and applies volume', async () => {
     const channels: FakeAudio[] = [];
     const engine = new MediaAmbienceEngine(() => {
       const audio = new FakeAudio(); channels.push(audio); return audio as unknown as HTMLAudioElement;
@@ -37,13 +36,39 @@ describe('MediaAmbienceEngine', () => {
     await engine.start('rain', 80, false);
 
     engine.update('coast', 80, false);
-    await vi.advanceTimersByTimeAsync(650);
 
     expect(channels[0].pause).toHaveBeenCalledOnce();
     expect(channels[1].src).toBe('./media/ambience/coast.ogg');
     expect(channels[1].volume).toBeCloseTo(0.8);
-    engine.update('coast', 80, true);
-    expect(channels[1].volume).toBe(0);
+    engine.update('coast', 25, false);
+    expect(channels[1].volume).toBe(0.25);
+  });
+
+  it('really pauses and resumes the active audio', async () => {
+    const audio = new FakeAudio();
+    const engine = new MediaAmbienceEngine(() => audio as unknown as HTMLAudioElement);
+    await engine.start('rain', 60, false);
+    engine.pause();
+    expect(audio.pause).toHaveBeenCalledOnce();
+    await engine.resume();
+    expect(audio.play).toHaveBeenCalledTimes(2);
+  });
+
+  it('prepares a newly selected scene while paused and resumes that scene', async () => {
+    const channels: FakeAudio[] = [];
+    const engine = new MediaAmbienceEngine(() => {
+      const audio = new FakeAudio(); channels.push(audio); return audio as unknown as HTMLAudioElement;
+    });
+    await engine.start('rain', 60, false);
+    engine.pause();
+
+    engine.select('forest', 45, false);
+    await engine.resume();
+
+    expect(channels[0].pause).toHaveBeenCalledTimes(2);
+    expect(channels[1].src).toBe('./media/ambience/forest.ogg');
+    expect(channels[1].volume).toBe(0.45);
+    expect(channels[1].play).toHaveBeenCalledOnce();
   });
 
   it('reports media failures for procedural fallback', async () => {

@@ -45,9 +45,8 @@ export function App() {
   const [answer, setAnswer] = useState('');
   const [asking, setAsking] = useState(false);
   const [speaking, setSpeaking] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [audioState, setAudioState] = useState<'stopped' | 'playing' | 'paused'>('stopped');
   const [volume, setVolume] = useState(62);
-  const [audioReady, setAudioReady] = useState(false);
   const audioEngine = useRef<MediaAmbienceEngine | null>(null);
   const fallbackNoise = useRef<WhiteNoiseEngine | null>(null);
   const customAudio = useRef<HTMLAudioElement | null>(null);
@@ -115,27 +114,44 @@ export function App() {
   }, [supervising, running, preferences.supervisionIntervalSeconds, preferences.services.vision, secrets.vision]);
 
   useEffect(() => {
-    audioEngine.current?.update(sceneId, volume, muted);
-    fallbackNoise.current?.update(sceneId, volume, muted);
-    if (customAudio.current) { customAudio.current.volume = muted ? 0 : volume / 100; }
-  }, [sceneId, volume, muted]);
+    if (customAudio.current) customAudio.current.volume = volume / 100;
+    if (audioState === 'paused') {
+      audioEngine.current?.select(sceneId, volume, false);
+      return;
+    }
+    if (audioState !== 'playing') return;
+    fallbackNoise.current?.stop(); fallbackNoise.current = null;
+    audioEngine.current?.update(sceneId, volume, false);
+  }, [sceneId, volume, audioState]);
 
   useEffect(() => () => { audioEngine.current?.stop(); fallbackNoise.current?.stop(); customAudio.current?.pause(); cameraSession.current?.stop(); }, []);
 
-  const enableAudio = () => {
+  const enableAudio = async () => {
     if (preferences.ambienceMode === 'custom' && assets.ambience) {
       audioEngine.current?.stop(); audioEngine.current = null;
       fallbackNoise.current?.stop(); fallbackNoise.current = null;
       if (!customAudio.current || customAudio.current.src !== assets.ambience.url) customAudio.current = new Audio(assets.ambience.url);
-      customAudio.current.loop = true; customAudio.current.volume = muted ? 0 : volume / 100;
-      void customAudio.current.play().then(() => setAudioReady(true)); return;
+      customAudio.current.loop = true; customAudio.current.volume = volume / 100;
+      await customAudio.current.play(); setAudioState('playing'); return;
     }
     customAudio.current?.pause(); customAudio.current = null;
     if (!audioEngine.current) audioEngine.current = new MediaAmbienceEngine(undefined, (fallbackScene, fallbackVolume, fallbackMuted) => {
       if (!fallbackNoise.current) fallbackNoise.current = new WhiteNoiseEngine();
       void fallbackNoise.current.start(fallbackScene, fallbackVolume, fallbackMuted);
-    });
-    void audioEngine.current.start(sceneId, volume, muted).then(() => setAudioReady(true));
+    }, () => { fallbackNoise.current?.stop(); fallbackNoise.current = null; });
+    await audioEngine.current.start(sceneId, volume, false); setAudioState('playing');
+  };
+
+  const toggleAudio = async () => {
+    if (audioState === 'playing') {
+      audioEngine.current?.pause(); await fallbackNoise.current?.pause(); customAudio.current?.pause(); setAudioState('paused'); return;
+    }
+    if (audioState === 'paused') {
+      if (customAudio.current) await customAudio.current.play();
+      else { await audioEngine.current?.resume(); await fallbackNoise.current?.resume(); }
+      setAudioState('playing'); return;
+    }
+    await enableAudio();
   };
 
   const toggleSupervision = async () => {
@@ -226,7 +242,7 @@ export function App() {
     </section>
 
     <section className="control-dock">
-      <div className="ambience"><div className="control-icon">♫</div><div><small>{audioReady ? muted ? '已静音' : '正在播放' : '点击播放'}</small><strong>{preferences.ambienceMode === 'custom' && assets.ambience ? assets.ambience.name : scene.noise}</strong></div><button onClick={() => { if (!audioReady) enableAudio(); else setMuted(v => !v); }} aria-label={!audioReady ? '播放白噪音' : muted ? '取消静音' : '静音'}>{!audioReady ? '▶' : muted ? '×' : '◖'}</button><input aria-label="白噪音音量" type="range" min="0" max="100" value={volume} onPointerDown={enableAudio} onChange={e => setVolume(Number(e.target.value))}/><output>{volume}%</output></div>
+      <div className="ambience"><div className="control-icon">♫</div><div><small>{audioState === 'playing' ? '正在播放' : audioState === 'paused' ? '已暂停' : '点击播放'}</small><strong>{preferences.ambienceMode === 'custom' && assets.ambience ? assets.ambience.name : scene.noise}</strong></div><button onClick={() => void toggleAudio()} aria-label={audioState === 'playing' ? '暂停白噪音' : '播放白噪音'}>{audioState === 'playing' ? '⏸' : '▶'}</button><input aria-label="白噪音音量" type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))}/><output>{volume}%</output></div>
       <div className="divider"/>
       <div className="supervision"><div className={`camera-dot ${supervising ? 'on' : ''}`}>◉</div><div><small>摄像头监督</small><strong>{cameraError || (supervising ? presenceText : '关闭时不访问摄像头')}</strong></div><button onClick={toggleSupervision}>{supervising ? '关闭摄像头' : '允许并开启'}</button></div>
       <button className="ask" onClick={() => setDrawer(true)} aria-label="问问灯灯"><span>✦</span>问问灯灯</button>

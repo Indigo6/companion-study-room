@@ -89,6 +89,10 @@ export class WhiteNoiseEngine {
     this.currentScene = undefined;
   }
 
+  async pause(): Promise<void> { await this.context?.suspend(); }
+
+  async resume(): Promise<void> { await this.context?.resume(); }
+
   private createGraph(): void {
     this.context = new window.AudioContext();
     this.filter = this.context.createBiquadFilter();

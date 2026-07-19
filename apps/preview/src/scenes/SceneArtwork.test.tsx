@@ -22,7 +22,7 @@ describe('SceneArtwork', () => {
 
   it('falls back to the poster when video loading fails', () => {
     render(<SceneArtwork scene="rain" reduceMotion={false}/>);
-    fireEvent.error(screen.getByLabelText('雨夜城市窗景'));
-    expect(screen.getByRole('img', { name: '雨夜城市窗景' })).toHaveAttribute('src', './media/scenes/rain.webp');
+    fireEvent.error(screen.getByLabelText('雨中绿叶'));
+    expect(screen.getByRole('img', { name: '雨中绿叶' })).toHaveAttribute('src', './media/scenes/rain.webp');
   });
 });
