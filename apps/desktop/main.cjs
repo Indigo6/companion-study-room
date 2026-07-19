@@ -7,6 +7,7 @@ const { createUpdateManager } = require('./update-manager.cjs');
 const { registerUpdateIpc } = require('./update-ipc.cjs');
 const { updateSourceFromEnvironment } = require('./update-config.cjs');
 const { createMacManualUpdater } = require('./mac-manual-updater.cjs');
+const { createPortableUpdateChecker } = require('./portable-update-checker.cjs');
 
 let mainWindow;
 
@@ -51,6 +52,7 @@ app.whenReady().then(() => {
     try {
       const metadata = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
       const source = updateSourceFromEnvironment(process.env, metadata);
+      const portable = process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_FILE);
       const updater = process.platform === 'darwin'
         ? createMacManualUpdater({
           currentVersion: app.getVersion(), arch: process.arch, source,
@@ -58,8 +60,10 @@ app.whenReady().then(() => {
           downloadDirectory: path.join(app.getPath('temp'), 'companion-study-room-updates'),
           saveFile: async (file, payload, onProgress) => { await fs.promises.mkdir(path.dirname(file), { recursive: true }); await fs.promises.writeFile(file, payload); onProgress(payload.length); },
         })
-        : require('electron-updater').autoUpdater;
-      const updates = createUpdateManager({ updater, platform: process.platform, isPackaged: app.isPackaged, source, openPath: file => shell.openPath(file) });
+        : portable
+          ? createPortableUpdateChecker({ currentVersion: app.getVersion(), owner: 'Indigo6', repo: 'companion-study-room', fetch: (url, options) => net.fetch(url, options) })
+          : require('electron-updater').autoUpdater;
+      const updates = createUpdateManager({ updater, platform: process.platform, isPackaged: app.isPackaged, source, openPath: file => shell.openPath(file), openExternal: url => shell.openExternal(url) });
       registerUpdateIpc({ ipcMain, manager: updates, getWindow: () => mainWindow });
       updates.start();
     } catch (error) {

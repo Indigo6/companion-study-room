@@ -51,6 +51,15 @@ describe('UpdateNotice', () => {
     expect(screen.queryByRole('button', { name: '立即重启更新' })).not.toBeInTheDocument();
   });
 
+  it('sends portable users to the release download page', async () => {
+    const { api } = bridge({ status: 'available', version: '0.2.0', action: 'open-download' });
+    render(<UpdateNotice bridge={api}/>);
+    fireEvent.click(await screen.findByRole('button', { name: '前往下载' }));
+    expect(api.install).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: '稍后' }));
+    expect(api.dismiss).toHaveBeenCalledTimes(1);
+  });
+
   it('shows safe errors and cleans up its subscription', async () => {
     const { api, emit, unsubscribe } = bridge({ status: 'idle' });
     const view = render(<UpdateNotice bridge={api}/>);

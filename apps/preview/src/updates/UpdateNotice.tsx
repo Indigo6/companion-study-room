@@ -3,7 +3,7 @@ import './update-notice.css';
 
 export type UpdateState =
   | { status: 'idle' | 'checking' }
-  | { status: 'available'; version?: string }
+  | { status: 'available'; version?: string; action?: 'open-download' }
   | { status: 'downloading'; version?: string; percent: number; transferred: number; total: number }
   | { status: 'downloaded'; version?: string; action: 'restart' | 'open-installer' }
   | { status: 'error'; message: string };
@@ -30,6 +30,14 @@ export function UpdateNotice({ bridge = window.companionUpdate }: { bridge?: Com
   }, [bridge]);
 
   if (!bridge || state.status === 'idle') return null;
+
+  if (state.status === 'available' && state.action === 'open-download') {
+    return <section className="update-notice update-ready" role="dialog" aria-label="便携版更新">
+      <div><strong>发现新版本{state.version ? ` ${state.version}` : ''}</strong><span>便携版不会自动覆盖，请前往发布页下载。</span></div>
+      <button className="update-primary" onClick={() => void bridge.install()}>前往下载</button>
+      <button onClick={() => void bridge.dismiss()}>稍后</button>
+    </section>;
+  }
 
   if (state.status === 'downloaded') {
     const opensInstaller = state.action === 'open-installer';

@@ -18,6 +18,7 @@ function createUpdateManager({
   isPackaged,
   source,
   openPath = async () => '无法打开安装包',
+  openExternal = async () => undefined,
   setTimeout = global.setTimeout,
   setInterval = global.setInterval,
   initialDelayMs = 15_000,
@@ -30,6 +31,7 @@ function createUpdateManager({
   let checking = false;
   let downloadedFile = '';
   let version = '';
+  let releaseUrl = '';
   const listeners = new Set();
 
   const publish = next => {
@@ -55,13 +57,16 @@ function createUpdateManager({
   const start = () => {
     if (active || !isPackaged || !['win32', 'darwin'].includes(platform)) return false;
     const feed = source ? resolveUpdateSource(source, { allowHttpForTests }) : undefined;
-    updater.autoDownload = true;
+    updater.autoDownload = !updater.portable;
     updater.autoInstallOnAppQuit = false;
     updater.allowPrerelease = false;
     if (feed) updater.setFeedURL(feed);
     updater.on('update-available', info => {
       version = info.version || '';
-      publish({ status: 'available', ...(version && { version }) });
+      if (info.portable && info.releaseUrl) {
+        releaseUrl = info.releaseUrl;
+        publish({ status: 'available', ...(version && { version }), action: 'open-download' });
+      } else publish({ status: 'available', ...(version && { version }) });
     });
     updater.on('update-not-available', () => publish({ status: 'idle' }));
     updater.on('download-progress', progress => publish({
@@ -87,6 +92,9 @@ function createUpdateManager({
   };
 
   const install = () => {
+    if (state.status === 'available' && state.action === 'open-download' && releaseUrl) {
+      return Promise.resolve(openExternal(releaseUrl)).then(() => true).catch(() => { publish({ status: 'error', message: '无法打开下载页面，请稍后重试' }); return false; });
+    }
     if (state.status !== 'downloaded') return false;
     if (platform === 'darwin' && !macAutoInstall) {
       if (!downloadedFile) return false;
@@ -103,7 +111,7 @@ function createUpdateManager({
     start,
     check,
     install,
-    dismiss: () => { if (state.status === 'downloaded' || state.status === 'error') publish({ status: 'idle' }); },
+    dismiss: () => { if (state.status === 'downloaded' || state.status === 'error' || (state.status === 'available' && state.action === 'open-download')) publish({ status: 'idle' }); },
     getState: () => state,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
   };
