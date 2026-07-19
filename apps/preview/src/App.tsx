@@ -17,6 +17,7 @@ import { playSpeechBlob, requestCompatibleSpeech, speakWithSystem } from './spee
 import { loadLocalAsset, type LocalAssetKind } from './assets/localAssetStore';
 import { SceneArtwork } from './scenes/SceneArtwork';
 import { getSceneMedia, sceneMedia as scenes, type SceneId } from './scenes/sceneMedia';
+import { UpdateNotice } from './updates/UpdateNotice';
 import './camera-preview.css';
 
 declare global { interface Window { companionAi?: { ask(question: string, config?: { baseUrl: string; model: string }): Promise<string>; inspect(image: string, config?: { baseUrl: string; model: string }): Promise<'present' | 'absent' | 'uncertain'> }; companionSettings?: { secretStatus(): Promise<Record<ServiceId, boolean>>; saveSecret(service: ServiceId, value: string): Promise<void>; testService(service: ServiceId, config: { baseUrl: string; model: string }): Promise<boolean>; synthesize(config: { baseUrl: string; model: string; voice?: string }, text: string): Promise<string> } } }
@@ -192,6 +193,7 @@ export function App() {
   };
 
   return <main className={`app scene-${scene.id} companion-${preferences.companionId} ${preferences.reduceMotion ? 'reduce-motion' : ''}`} aria-label={`${scene.name}场景`}>
+    <UpdateNotice/>
     <div className="atmosphere" aria-hidden="true"><span/><span/><span/><span/></div>
     <header className="topbar">
       <div className="brand"><i className="brand-light"/><span>伴读</span><em>STUDY WITH ME</em></div>
