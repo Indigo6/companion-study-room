@@ -82,6 +82,16 @@ npm run desktop:dist:generic
 
 当前 macOS 构建没有 Developer ID 与 Apple 公证凭据，因此下载完成后会提示用户打开 DMG 并手动覆盖安装，不执行静默应用内安装。取得证书后应启用稳定签名和公证，再验收应用内重启安装流程。
 
+### Windows 安装方式
+
+Windows Release 同时提供 `setup` 安装版和 `portable` 便携版。安装版会显示安装向导：
+
+- “仅为我安装”默认使用 `%LOCALAPPDATA%\Programs\伴读`，通常不需要管理员权限。
+- “为所有用户安装”默认使用 `%ProgramFiles%\伴读`，Windows 会请求管理员权限。
+- 两种模式都可以在目录页面修改安装位置。
+
+Portable EXE 无需安装，不创建卸载项。它不会自动下载或覆盖自身；检测到新版时只提示用户前往 GitHub Release 下载。
+
 ## 桌面设置中心
 
 桌面版右上角设置中心支持：

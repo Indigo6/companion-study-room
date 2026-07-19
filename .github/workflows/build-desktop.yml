@@ -23,14 +23,15 @@ jobs:
       - run: npm ci
       - run: npm run preview:test -- --run
       - run: npm run preview:build
-      - run: npx electron-builder --win nsis --x64 --publish never
+      - run: npx electron-builder --win nsis portable --x64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-windows-x64
           path: |
-            release/*.exe
+            release/*setup*.exe
+            release/*portable*.exe
             release/*.blockmap
             release/*.yml
           if-no-files-found: error

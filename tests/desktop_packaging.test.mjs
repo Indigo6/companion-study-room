@@ -10,7 +10,9 @@ test('desktop packaging includes updater runtime and auto-update targets', async
   const macUpdater = await readFile(new URL('apps/desktop/mac-manual-updater.cjs', root), 'utf8');
   const genericConfig = await readFile(new URL('apps/desktop/electron-builder.generic.cjs', root), 'utf8');
   assert.match(packageJson.dependencies['electron-updater'], /^\^/);
-  assert.deepEqual(packageJson.build.win.target, ['nsis']);
+  assert.deepEqual(packageJson.build.win.target, ['nsis', 'portable']);
+  assert.deepEqual(packageJson.build.nsis, { oneClick: false, perMachine: false, allowToChangeInstallationDirectory: true, artifactName: '${productName}-${version}-setup-${arch}.${ext}' });
+  assert.equal(packageJson.build.portable.artifactName, '${productName}-${version}-portable-${arch}.${ext}');
   assert.deepEqual(packageJson.build.mac.target, ['dmg', 'zip']);
   assert.equal(packageJson.build.publish.provider, 'github');
   assert.equal(packageJson.build.publish.owner, 'Indigo6');
@@ -29,6 +31,9 @@ test('desktop workflow retains updater metadata and publishes version tags', asy
   assert.match(workflow, /release\/\*\.yml/);
   assert.match(workflow, /release\/\*\.blockmap/);
   assert.match(workflow, /release\/\*\.zip/);
+  assert.match(workflow, /electron-builder --win nsis portable --x64/);
+  assert.match(workflow, /release\/\*setup\*\.exe/);
+  assert.match(workflow, /release\/\*portable\*\.exe/);
   assert.match(workflow, /release:\s*\n/);
   assert.match(workflow, /contents: write/);
   assert.match(workflow, /softprops\/action-gh-release@v2/);
