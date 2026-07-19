@@ -10,35 +10,58 @@
     "preview:test": "vitest --config apps/preview/vite.config.ts",
     "desktop:dev": "npm run preview:build && electron apps/desktop/main.cjs",
     "desktop:pack": "npm run preview:build && electron-builder --dir",
-    "desktop:dist": "npm run preview:build && electron-builder"
+    "desktop:dist": "npm run preview:build && electron-builder",
+    "desktop:dist:generic": "npm run preview:build && electron-builder --config.publish.provider=generic --config.publish.url=$COMPANION_UPDATE_URL --config.extraMetadata.companionUpdateSource.provider=generic --config.extraMetadata.companionUpdateSource.url=$COMPANION_UPDATE_URL && node apps/desktop/create-mac-update-manifest.cjs"
   },
-  "dependencies": {},
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
   "devDependencies": {
-    "@vitejs/plugin-react": "latest",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "jsdom": "latest",
-    "vitest": "latest",
+    "@vitejs/plugin-react": "latest",
     "electron": "latest",
     "electron-builder": "latest",
+    "jsdom": "latest",
     "react": "latest",
     "react-dom": "latest",
     "typescript": "latest",
     "vite": "latest",
+    "vitest": "latest",
     "zustand": "latest"
   },
   "main": "apps/desktop/main.cjs",
   "build": {
     "appId": "com.companionstudyroom.app",
     "productName": "伴读",
-    "files": ["apps/desktop/**/*", "apps/preview/dist/**/*", "package.json"],
-    "directories": { "output": "release" },
-    "win": { "target": "nsis" },
+    "files": [
+      "apps/desktop/**/*",
+      "apps/preview/dist/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Indigo6",
+      "repo": "companion-study-room"
+    },
+    "extraMetadata": {
+      "companionUpdateSource": {
+        "provider": "github",
+        "owner": "Indigo6",
+        "repo": "companion-study-room"
+      }
+    },
+    "win": {
+      "target": ["nsis"]
+    },
     "mac": {
-      "target": "dmg",
+      "target": ["dmg", "zip"],
       "identity": "-",
       "hardenedRuntime": true,
       "entitlements": "apps/desktop/entitlements.mac.plist",
@@ -47,6 +70,9 @@
         "NSCameraUsageDescription": "伴读需要使用摄像头，在专注期间进行用户明确开启的在席监督。"
       }
     },
-    "linux": { "target": "AppImage", "category": "Education" }
+    "linux": {
+      "target": "AppImage",
+      "category": "Education"
+    }
   }
 }

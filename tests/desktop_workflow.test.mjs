@@ -12,8 +12,8 @@ test('desktop workflow builds downloadable Windows and macOS installers on deman
   assert.match(workflow, /runs-on: macos-15-intel/);
   assert.equal((workflow.match(/npm run preview:test -- --run/g) ?? []).length, 3);
   assert.match(workflow, /electron-builder --win nsis --x64/);
-  assert.match(workflow, /electron-builder --mac dmg --arm64/);
-  assert.match(workflow, /electron-builder --mac dmg --x64/);
+  assert.match(workflow, /electron-builder --mac dmg zip --arm64/);
+  assert.match(workflow, /electron-builder --mac dmg zip --x64/);
   assert.equal((workflow.match(/actions\/upload-artifact@v4/g) ?? []).length, 3);
   assert.match(workflow, /retention-days: 14/);
 });

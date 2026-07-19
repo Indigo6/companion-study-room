@@ -1,21 +1,14 @@
 const path = require('node:path');
 const fs = require('node:fs');
-const { app, BrowserWindow, ipcMain, safeStorage, session, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, session, shell, net } = require('electron');
 const ai = require('./ai-client.cjs');
 const { createSettingsStore } = require('./settings-store.cjs');
 const { createUpdateManager } = require('./update-manager.cjs');
 const { registerUpdateIpc } = require('./update-ipc.cjs');
+const { updateSourceFromEnvironment } = require('./update-config.cjs');
+const { createMacManualUpdater } = require('./mac-manual-updater.cjs');
 
 let mainWindow;
-
-function updateSourceFromEnvironment(env = process.env) {
-  if (env.COMPANION_UPDATE_PROVIDER === 'generic') return { provider: 'generic', url: env.COMPANION_UPDATE_URL };
-  return {
-    provider: 'github',
-    owner: env.COMPANION_UPDATE_GITHUB_OWNER || 'Indigo6',
-    repo: env.COMPANION_UPDATE_GITHUB_REPO || 'companion-study-room',
-  };
-}
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -56,8 +49,17 @@ app.whenReady().then(() => {
   createWindow();
   if (app.isPackaged) {
     try {
-      const { autoUpdater } = require('electron-updater');
-      const updates = createUpdateManager({ updater: autoUpdater, platform: process.platform, isPackaged: app.isPackaged, source: updateSourceFromEnvironment(), openPath: file => shell.openPath(file) });
+      const metadata = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
+      const source = updateSourceFromEnvironment(process.env, metadata);
+      const updater = process.platform === 'darwin'
+        ? createMacManualUpdater({
+          currentVersion: app.getVersion(), arch: process.arch, source,
+          fetch: (url, options) => net.fetch(url, options),
+          downloadDirectory: path.join(app.getPath('temp'), 'companion-study-room-updates'),
+          saveFile: async (file, payload, onProgress) => { await fs.promises.mkdir(path.dirname(file), { recursive: true }); await fs.promises.writeFile(file, payload); onProgress(payload.length); },
+        })
+        : require('electron-updater').autoUpdater;
+      const updates = createUpdateManager({ updater, platform: process.platform, isPackaged: app.isPackaged, source, openPath: file => shell.openPath(file) });
       registerUpdateIpc({ ipcMain, manager: updates, getWindow: () => mainWindow });
       updates.start();
     } catch (error) {
@@ -68,5 +70,3 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-
-module.exports = { updateSourceFromEnvironment };

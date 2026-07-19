@@ -39,6 +39,13 @@ test('does not start outside packaged Windows and macOS applications', () => {
   assert.equal(updater.feed, null);
 });
 
+test('uses packaged app-update configuration when no runtime source override exists', () => {
+  const updater = new FakeUpdater();
+  const manager = createUpdateManager({ updater, platform: 'win32', isPackaged: true, ...createTimers() });
+  assert.equal(manager.start(), true);
+  assert.equal(updater.feed, null);
+});
+
 test('starts with a delayed check and suppresses duplicate checks', async () => {
   const updater = new FakeUpdater();
   let finishCheck;

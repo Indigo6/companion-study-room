@@ -65,6 +65,23 @@ npm run desktop:pack
 
 Web 版本同时包含 PWA manifest 和离线缓存，可在支持的移动浏览器中“添加到主屏幕”。移动端摄像头同样要求 HTTPS，后台计时能力受手机系统的节电策略影响。
 
+## 桌面自动更新
+
+已安装的桌面版会在启动后自动检查并下载稳定版更新。Windows 下载完成后提示“立即重启更新”或“稍后”，不会直接打断正在进行的自习。
+
+默认更新源是公开的 GitHub Releases。推送 `v*` 版本标签会触发安装包、blockmap 和更新元数据构建，并创建 Release。版本号必须先在 `package.json` 中递增，标签需与版本一致，例如 `v0.2.0`。
+
+也可以为自建 HTTPS 静态更新服务器构建相同产物：
+
+```bash
+export COMPANION_UPDATE_URL=https://updates.example.com/companion-study-room
+npm run desktop:dist:generic
+```
+
+将 `release/` 中的安装包、`.blockmap`、`latest.yml`、`latest-mac-arm64.json` 与 `latest-mac-x64.json` 原样上传到该 URL。两个 macOS JSON 清单由构建脚本生成，包含对应 DMG 的 SHA-512；更新服务器必须公开可读且使用 HTTPS，客户端不保存 GitHub token 或服务器凭据。
+
+当前 macOS 构建没有 Developer ID 与 Apple 公证凭据，因此下载完成后会提示用户打开 DMG 并手动覆盖安装，不执行静默应用内安装。取得证书后应启用稳定签名和公证，再验收应用内重启安装流程。
+
 ## 桌面设置中心
 
 桌面版右上角设置中心支持：

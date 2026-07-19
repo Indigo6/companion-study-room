@@ -54,11 +54,11 @@ function createUpdateManager({
 
   const start = () => {
     if (active || !isPackaged || !['win32', 'darwin'].includes(platform)) return false;
-    const feed = resolveUpdateSource(source, { allowHttpForTests });
+    const feed = source ? resolveUpdateSource(source, { allowHttpForTests }) : undefined;
     updater.autoDownload = true;
     updater.autoInstallOnAppQuit = false;
     updater.allowPrerelease = false;
-    updater.setFeedURL(feed);
+    if (feed) updater.setFeedURL(feed);
     updater.on('update-available', info => {
       version = info.version || '';
       publish({ status: 'available', ...(version && { version }) });
