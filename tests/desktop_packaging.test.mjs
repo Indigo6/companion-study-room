@@ -8,13 +8,17 @@ test('desktop packaging includes updater runtime and auto-update targets', async
   const packageJson = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
   const main = await readFile(new URL('apps/desktop/main.cjs', root), 'utf8');
   const macUpdater = await readFile(new URL('apps/desktop/mac-manual-updater.cjs', root), 'utf8');
+  const genericConfig = await readFile(new URL('apps/desktop/electron-builder.generic.cjs', root), 'utf8');
   assert.match(packageJson.dependencies['electron-updater'], /^\^/);
   assert.deepEqual(packageJson.build.win.target, ['nsis']);
   assert.deepEqual(packageJson.build.mac.target, ['dmg', 'zip']);
   assert.equal(packageJson.build.publish.provider, 'github');
   assert.equal(packageJson.build.publish.owner, 'Indigo6');
   assert.equal(packageJson.build.publish.repo, 'companion-study-room');
-  assert.match(packageJson.scripts['desktop:dist:generic'], /COMPANION_UPDATE_URL/);
+  assert.doesNotMatch(packageJson.scripts['desktop:dist:generic'], /\$COMPANION_UPDATE_URL/);
+  assert.match(packageJson.scripts['desktop:dist:generic'], /electron-builder\.generic\.cjs/);
+  assert.match(genericConfig, /new URL\(updateUrl\)/);
+  assert.match(genericConfig, /COMPANION_UPDATE_URL/);
   assert.match(main, /createMacManualUpdater/);
   assert.match(macUpdater, /latest-mac-/);
 });

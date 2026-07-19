@@ -11,7 +11,7 @@
     "desktop:dev": "npm run preview:build && electron apps/desktop/main.cjs",
     "desktop:pack": "npm run preview:build && electron-builder --dir",
     "desktop:dist": "npm run preview:build && electron-builder",
-    "desktop:dist:generic": "npm run preview:build && electron-builder --config.publish.provider=generic --config.publish.url=$COMPANION_UPDATE_URL --config.extraMetadata.companionUpdateSource.provider=generic --config.extraMetadata.companionUpdateSource.url=$COMPANION_UPDATE_URL && node apps/desktop/create-mac-update-manifest.cjs"
+    "desktop:dist:generic": "npm run preview:build && electron-builder --config apps/desktop/electron-builder.generic.cjs && node apps/desktop/create-mac-update-manifest.cjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"
