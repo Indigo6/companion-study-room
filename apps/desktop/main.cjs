@@ -1,8 +1,21 @@
 const path = require('node:path');
 const fs = require('node:fs');
-const { app, BrowserWindow, ipcMain, safeStorage, session } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, session, shell } = require('electron');
 const ai = require('./ai-client.cjs');
 const { createSettingsStore } = require('./settings-store.cjs');
+const { createUpdateManager } = require('./update-manager.cjs');
+const { registerUpdateIpc } = require('./update-ipc.cjs');
+
+let mainWindow;
+
+function updateSourceFromEnvironment(env = process.env) {
+  if (env.COMPANION_UPDATE_PROVIDER === 'generic') return { provider: 'generic', url: env.COMPANION_UPDATE_URL };
+  return {
+    provider: 'github',
+    owner: env.COMPANION_UPDATE_GITHUB_OWNER || 'Indigo6',
+    repo: env.COMPANION_UPDATE_GITHUB_REPO || 'companion-study-room',
+  };
+}
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -13,7 +26,10 @@ function createWindow() {
       contextIsolation: true, nodeIntegration: false, sandbox: true,
     },
   });
+  mainWindow = window;
+  window.on('closed', () => { if (mainWindow === window) mainWindow = undefined; });
   window.loadFile(path.join(__dirname, '..', 'preview', 'dist', 'index.html'));
+  return window;
 }
 
 app.whenReady().then(() => {
@@ -38,7 +54,19 @@ app.whenReady().then(() => {
   ipcMain.handle('companion:ask', (_event, payload) => ai.ask(payload.question, undefined, { ...payload.config, apiKey: settings.getSecret('chat') }));
   ipcMain.handle('companion:inspect', (_event, payload) => ai.inspect(payload.image, undefined, { ...payload.config, apiKey: settings.getSecret('vision') }));
   createWindow();
+  if (app.isPackaged) {
+    try {
+      const { autoUpdater } = require('electron-updater');
+      const updates = createUpdateManager({ updater: autoUpdater, platform: process.platform, isPackaged: app.isPackaged, source: updateSourceFromEnvironment(), openPath: file => shell.openPath(file) });
+      registerUpdateIpc({ ipcMain, manager: updates, getWindow: () => mainWindow });
+      updates.start();
+    } catch (error) {
+      console.error('Desktop updates are unavailable:', error);
+    }
+  }
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+
+module.exports = { updateSourceFromEnvironment };
