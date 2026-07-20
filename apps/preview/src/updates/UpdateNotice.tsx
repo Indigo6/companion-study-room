@@ -29,7 +29,7 @@ export function UpdateNotice({ bridge = window.companionUpdate }: { bridge?: Com
     return () => { mounted = false; unsubscribe(); };
   }, [bridge]);
 
-  if (!bridge || state.status === 'idle') return null;
+  if (!bridge || state.status === 'idle' || state.status === 'checking' || state.status === 'error') return null;
 
   if (state.status === 'available' && state.action === 'open-download') {
     return <section className="update-notice update-ready" role="dialog" aria-label="便携版更新">
@@ -55,9 +55,5 @@ export function UpdateNotice({ bridge = window.companionUpdate }: { bridge?: Com
     </section>;
   }
 
-  if (state.status === 'error') {
-    return <section className="update-notice update-error" role="status"><span>{state.message}</span><button onClick={() => void bridge.dismiss()}>关闭</button></section>;
-  }
-
-  return <section className="update-notice" role="status"><span>{state.status === 'checking' ? '正在检查更新…' : `发现新版本${state.version ? ` ${state.version}` : ''}，准备下载…`}</span></section>;
+  return <section className="update-notice" role="status"><span>{`发现新版本${state.version ? ` ${state.version}` : ''}，准备下载…`}</span></section>;
 }

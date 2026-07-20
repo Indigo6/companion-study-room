@@ -60,12 +60,22 @@ describe('UpdateNotice', () => {
     expect(api.dismiss).toHaveBeenCalledTimes(1);
   });
 
-  it('shows safe errors and cleans up its subscription', async () => {
+  it.each([
+    { status: 'checking' } as const,
+    { status: 'error', message: '更新暂时不可用，请稍后重试' } as const,
+  ])('stays hidden when the background state is $status', async initial => {
+    const { api } = bridge(initial);
+    const { container } = render(<UpdateNotice bridge={api}/>);
+    await waitFor(() => expect(api.getState).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('hides a background error emitted after startup and cleans up its subscription', async () => {
     const { api, emit, unsubscribe } = bridge({ status: 'idle' });
     const view = render(<UpdateNotice bridge={api}/>);
     await waitFor(() => expect(api.onState).toHaveBeenCalled());
     emit({ status: 'error', message: '更新暂时不可用，请稍后重试' });
-    expect(await screen.findByText('更新暂时不可用，请稍后重试')).toBeInTheDocument();
+    await waitFor(() => expect(view.container).toBeEmptyDOMElement());
     view.unmount();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
